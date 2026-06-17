@@ -77,7 +77,7 @@ export default function BusinessMap({
               <p className="text-xs text-gray-500 mt-0.5">{business.category}</p>
               <p className="text-xs text-gray-500 mt-0.5">⭐ {Number(business.rating_avg).toFixed(1)}</p>
               <Link
-                href={`/business/${business.id}`}
+                href={business.id.startsWith("demo") ? `/business/${business.id}` : `/business/${business.id}`}
                 className="inline-block mt-2 text-xs font-medium text-brand-600 hover:underline"
               >
                 Ver negocio →

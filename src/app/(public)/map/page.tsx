@@ -30,8 +30,8 @@ export default async function MapPage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <div className="px-4 py-4 border-b border-gray-100 bg-white">
+    <div className="flex flex-col" style={{ height: "calc(100vh - 4rem)" }}>
+      <div className="px-4 py-4 border-b border-gray-100 bg-white shrink-0">
         <h1 className="text-xl font-bold text-gray-900">
           🗺️ Mapa de Negocios — Acámbaro
         </h1>
@@ -39,7 +39,7 @@ export default async function MapPage() {
           {businesses.length} negocios en el mapa
         </p>
       </div>
-      <div className="flex-1 p-4">
+      <div className="flex-1 min-h-0 p-4">
         <MapWrapper businesses={businesses} />
       </div>
     </div>

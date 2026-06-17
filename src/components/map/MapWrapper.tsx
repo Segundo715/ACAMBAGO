@@ -10,5 +10,9 @@ interface Props {
 }
 
 export default function MapWrapper({ businesses }: Props) {
-  return <BusinessMap businesses={businesses} />;
+  return (
+    <div className="h-full w-full">
+      <BusinessMap businesses={businesses} />
+    </div>
+  );
 }

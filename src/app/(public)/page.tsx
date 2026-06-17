@@ -2,11 +2,14 @@ import BusinessCard from "@/components/business/BusinessCard";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import { DEMO_BUSINESSES } from "@/lib/demo-data";
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Search, Ticket, Store, ArrowRight, ShieldCheck, Star } from "lucide-react";
 
 export const revalidate = 60;
 
 async function getBusinesses(category?: string, search?: string): Promise<Business[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (!url || url.includes("your-project") || url === "https://placeholder.supabase.co") return [];
   try {
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
@@ -59,12 +62,23 @@ export default async function HomePage({
   return (
     <>
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-brand-700 via-brand-600 to-orange-500 text-white overflow-hidden relative">
+      <section className="text-white overflow-hidden relative">
+        {/* Imagen de fondo */}
+        <Image
+          src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1920&q=80"
+          alt="Mercado local"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        {/* Overlay con gradiente para legibilidad */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/85 via-brand-800/80 to-orange-700/75" />
+        {/* Destellos decorativos */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-60 h-60 bg-white rounded-full blur-3xl" />
         </div>
-        <div className="max-w-7xl mx-auto px-4 py-16 md:py-20 text-center relative">
+        <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 text-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium mb-5">
             <MapPin className="w-4 h-4" />
             Acámbaro, Guanajuato

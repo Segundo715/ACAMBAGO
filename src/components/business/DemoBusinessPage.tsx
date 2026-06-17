@@ -1,11 +1,11 @@
 import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
-import { MapPin, Phone, Tag, Wrench, MessageSquare, User } from "lucide-react";
+import { MapPin, Phone, Tag, Wrench, MessageSquare, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
 
 interface Props {
   business: Business;
@@ -36,8 +36,18 @@ export default function DemoBusinessPage({
 
       {/* Header */}
       <div className="card mb-6">
-        <div className="h-52 bg-gradient-to-br from-brand-50 to-brand-100 rounded-t-2xl flex items-end p-6">
-          <div className="w-20 h-20 rounded-2xl bg-white shadow-lg flex items-center justify-center text-4xl -mb-10">
+        <div className="h-52 rounded-t-2xl overflow-hidden relative flex items-end p-6 bg-gradient-to-br from-brand-50 to-brand-100">
+          {business.image_url && (
+            <Image
+              src={business.image_url}
+              alt={business.name}
+              fill
+              className="object-cover"
+              priority
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="relative z-10 w-20 h-20 rounded-2xl bg-white shadow-lg flex items-center justify-center text-4xl -mb-10">
             {emoji}
           </div>
         </div>

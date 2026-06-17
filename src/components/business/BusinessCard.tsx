@@ -13,6 +13,11 @@ export default function BusinessCard({ business }: Props) {
     "demo-lavado": "/business/demo-lavado",
     "demo-cerrajero": "/business/demo-cerrajero",
     "demo-pintor": "/business/demo-pintor",
+    "demo-salon": "/business/demo-salon",
+    "demo-farmacia": "/business/demo-farmacia",
+    "demo-taller": "/business/demo-taller",
+    "demo-veterinaria": "/business/demo-veterinaria",
+    "demo-papeleria": "/business/demo-papeleria",
   };
   const href = demoSlugs[business.id] ?? `/business/${business.id}`;
   return (

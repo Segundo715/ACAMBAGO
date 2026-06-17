@@ -65,8 +65,8 @@ export default async function HomePage({
       <section className="text-white overflow-hidden relative">
         {/* Imagen de fondo */}
         <Image
-          src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1920&q=80"
-          alt="Mercado local"
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Francis_of_Assisi_Church%2C_Acambaro%2C_Guanajuato_State%2C_Mexico_-_2007.jpg/1920px-Francis_of_Assisi_Church%2C_Acambaro%2C_Guanajuato_State%2C_Mexico_-_2007.jpg"
+          alt="Parroquia de San Francisco de Asís, Acámbaro, Guanajuato"
           fill
           className="object-cover object-center"
           priority

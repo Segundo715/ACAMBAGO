@@ -68,7 +68,7 @@ export default async function HomePage({
           src="/hero-iglesia.jpg"
           alt="Parroquia de San Francisco de Asís, Acámbaro, Guanajuato"
           fill
-          className="object-cover object-top"
+          className="object-cover object-center"
           priority
         />
         {/* Overlay con gradiente para legibilidad */}
@@ -78,7 +78,7 @@ export default async function HomePage({
           <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-10 w-60 h-60 bg-white rounded-full blur-3xl" />
         </div>
-        <div className="max-w-7xl mx-auto px-4 py-16 md:py-24 text-center relative z-10">
+        <div className="max-w-7xl mx-auto px-4 py-20 md:py-32 text-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium mb-5">
             <MapPin className="w-4 h-4" />
             Acámbaro, Guanajuato

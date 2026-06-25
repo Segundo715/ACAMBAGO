@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon } from "@/types";
 import CouponCard from "@/components/coupons/CouponCard";
@@ -9,22 +10,25 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 
 export default function CouponsPage() {
+  const { user, isLoaded } = useUser();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
+    if (!isLoaded || !user) return;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
-      if (!biz) return;
+      if (!biz) {
+        window.location.href = "/dashboard/business/settings";
+        return;
+      }
       const { data } = await supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false });
       setCoupons((data ?? []) as Coupon[]);
       setLoading(false);
     };
     load();
-  }, []);
+  }, [isLoaded, user?.id]);
 
   const toggleActive = async (coupon: Coupon) => {
     const { error } = await supabase.from("coupons").update({ is_active: !coupon.is_active }).eq("id", coupon.id);
@@ -45,8 +49,8 @@ export default function CouponsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cupones</h1>
-          <p className="text-gray-500 text-sm mt-0.5">{coupons.length} cupones creados</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cupones</h1>
+          <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5">{coupons.length} cupones creados</p>
         </div>
         <Link href="/dashboard/business/coupons/new" className="btn-primary flex items-center gap-2 text-sm">
           <Plus className="w-4 h-4" /> Crear cupón
@@ -56,13 +60,13 @@ export default function CouponsPage() {
       {loading ? (
         <div className="space-y-4">
           {[1,2,3].map((i) => (
-            <div key={i} className="card h-28 animate-pulse bg-gray-100" />
+            <div key={i} className="card h-28 animate-pulse bg-gray-100 dark:bg-white/5" />
           ))}
         </div>
       ) : coupons.length === 0 ? (
         <div className="card p-12 text-center">
-          <Ticket className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Sin cupones todavía</p>
+          <Ticket className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-gray-500 dark:text-slate-400">Sin cupones todavía</p>
           <Link href="/dashboard/business/coupons/new" className="btn-primary mt-4 text-sm inline-block">
             Crear el primero
           </Link>
@@ -83,7 +87,7 @@ export default function CouponsPage() {
                 </button>
                 <button
                   onClick={() => deleteCoupon(c.id)}
-                  className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"
                 >
                   Eliminar
                 </button>

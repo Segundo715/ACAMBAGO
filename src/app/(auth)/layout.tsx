@@ -1,18 +1,15 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import Image from "next/image";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+          <Link href="/" className="inline-flex items-center">
+            <div className="h-12 bg-white rounded-2xl px-3 flex items-center">
+              <Image src="/acomdi.png" alt="Acom-Di" width={100} height={40} className="h-10 w-auto object-contain" />
             </div>
-            <span className="font-bold text-2xl text-gray-900">
-              Acamba<span className="text-brand-600">Go</span>
-            </span>
           </Link>
         </div>
         {children}

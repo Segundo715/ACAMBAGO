@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Instrucciones generales
+
+- Siempre responde en español.
+- Escribe con la voz de marca de AcambaGo: cercana, directa y orientada a la comunidad local de Acámbaro.
+- Nunca uses guiones largos (—). Usa coma, punto y coma o punto según corresponda.
+- Si el proyecto no existe aun como paquete Next.js, crealo con `npx create-next-app@latest`.
+
 ## Commands
 
 ```bash

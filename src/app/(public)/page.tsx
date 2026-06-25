@@ -1,9 +1,18 @@
 import BusinessCard from "@/components/business/BusinessCard";
+import ProductsReel from "@/components/ui/ProductsReel";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
-import { DEMO_BUSINESSES } from "@/lib/demo-data";
+import {
+  DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
+  DEMO_PRODUCTS, DEMO_PRODUCTS_ROPA, DEMO_PRODUCTS_ELECTRONICA,
+  DEMO_PRODUCTS_ZAPATERIA, DEMO_PRODUCTS_JOYERIA, DEMO_PRODUCTS_ARTESANIAS, DEMO_PRODUCTS_DEPORTES,
+  DEMO_PRODUCTS_REPOSTERIA, DEMO_PRODUCTS_COMPUTACION, DEMO_PRODUCTS_FLORISTERIA, DEMO_PRODUCTS_PANADERIA,
+} from "@/lib/demo-data";
+
+const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Search, Ticket, Store, ArrowRight, ShieldCheck, Star } from "lucide-react";
+import { MapPin, Search, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -14,21 +23,39 @@ async function getBusinesses(category?: string, search?: string): Promise<Busine
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
     let query = supabase
-      .from("businesses")
-      .select("*")
-      .eq("is_approved", true)
-      .eq("is_active", true)
+      .from("businesses").select("*")
+      .eq("is_approved", true).eq("is_active", true)
       .order("rating_avg", { ascending: false });
-
     if (category) query = query.eq("category", category);
     if (search) query = query.ilike("name", `%${search}%`);
-
     const { data } = await query.limit(24);
     return (data ?? []) as Business[];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
+
+const FEATURED = [
+  { ...DEMO_PRODUCTS[0],        business_name: "Ferretería Acámbaro",     business_category: "Ferretería",   image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ROPA[0],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ELECTRONICA[0], business_name: "TechStore Acámbaro", business_category: "Electrónica", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ZAPATERIA[0], business_name: "Zapatería El Paso",    business_category: "Zapatería",   image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80" },
+  { ...DEMO_PRODUCTS_JOYERIA[0],  business_name: "Joyería Acámbaro Gold", business_category: "Joyería",     image: "https://images.unsplash.com/photo-1535632787350-4e68ef0ac584?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ELECTRONICA[3], business_name: "TechStore Acámbaro", business_category: "Electrónica", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ARTESANIAS[0], business_name: "Artesanías de Acámbaro", business_category: "Artesanías", image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80" },
+  { ...DEMO_PRODUCTS_DEPORTES[0],     business_name: "Deportes Acámbaro",       business_category: "Deportes",    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=80" },
+  { ...DEMO_PRODUCTS_REPOSTERIA[0],   business_name: "Repostería Dulce Vida",   business_category: "Otro",        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80" },
+  { ...DEMO_PRODUCTS_COMPUTACION[0],  business_name: "Computación Pro",         business_category: "Electrónica", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80" },
+  { ...DEMO_PRODUCTS_FLORISTERIA[0],  business_name: "Floristería Las Margaritas", business_category: "Otro",     image: "https://images.unsplash.com/photo-1490750967868-88df5691cc0e?w=400&q=80" },
+  { ...DEMO_PRODUCTS_PANADERIA[0],    business_name: "Panadería El Trigal",     business_category: "Otro",        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80" },
+];
+
+const FEATURED_CATEGORIES = [
+  { name: "Tienda de ropa", emoji: "👗", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80", desc: "Moda para toda la familia" },
+  { name: "Electrónica",    emoji: "📱", image: "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80", desc: "Gadgets y accesorios" },
+  { name: "Joyería",        emoji: "💍", image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80", desc: "Plata, oro y fantasía" },
+  { name: "Zapatería",      emoji: "👟", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", desc: "Calzado para todos" },
+  { name: "Artesanías",     emoji: "🏺", image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80", desc: "Hecho a mano en Acámbaro" },
+  { name: "Deportes",       emoji: "⚽", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80", desc: "Equipo y ropa deportiva" },
+];
 
 export default async function HomePage({
   searchParams,
@@ -37,12 +64,10 @@ export default async function HomePage({
 }) {
   const params = await searchParams;
   const supabaseBusinesses = await getBusinesses(params.category, params.q);
-
-  // Filtrar demos según búsqueda/categoría
   const query = params.q?.toLowerCase() ?? "";
   const cat = params.category ?? "";
 
-  const filteredDemos = DEMO_BUSINESSES.filter((b) => {
+  const filteredDemos = ALL_DEMO_BUSINESSES.filter((b) => {
     const matchesCat = !cat || b.category === cat;
     const matchesQuery = !query || b.name.toLowerCase().includes(query) || b.description?.toLowerCase().includes(query);
     return matchesCat && matchesQuery;
@@ -54,173 +79,217 @@ export default async function HomePage({
   ];
 
   const totalCount = businesses.length;
-  const serviceBusinesses = businesses.filter((b) => b.category === "Servicios del hogar");
-  const productBusinesses = businesses.filter((b) => b.category !== "Servicios del hogar");
-
   const isFiltered = !!(params.category || params.q);
 
   return (
     <>
       {/* ── Hero ── */}
       <section className="text-white overflow-hidden relative">
-        {/* Imagen de fondo */}
-        <Image
-          src="/hero-iglesia.jpg"
-          alt="Parroquia de San Francisco de Asís, Acámbaro, Guanajuato"
-          fill
-          className="object-cover object-center"
-          priority
-        />
-        {/* Overlay con gradiente para legibilidad */}
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/85 via-brand-800/80 to-orange-700/75" />
-        {/* Destellos decorativos */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-60 h-60 bg-white rounded-full blur-3xl" />
+        <Image src="/hero-iglesia.jpg" alt="Parroquia de San Francisco de Asís, Acámbaro" fill className="object-cover object-center" priority />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/95 via-[#060e18]/90 to-brand-800/85" />
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-10 left-10 w-48 h-48 bg-brand-400 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-brand-600 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         </div>
+
         <div className="max-w-7xl mx-auto px-4 py-20 md:py-32 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium mb-5">
-            <MapPin className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 rounded-full text-sm font-medium mb-5">
+            <MapPin className="w-4 h-4 text-brand-300" />
             Acámbaro, Guanajuato
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-            Compra, vende y contrata<br />
-            <span className="text-yellow-300">en tu ciudad</span>
+            Compra local,<br />
+            <span className="text-brand-300">apoya tu ciudad</span>
           </h1>
-          <p className="text-brand-100 text-lg max-w-2xl mx-auto mb-8">
-            El marketplace local de Acámbaro. Publica tus productos y servicios, o encuentra lo que necesitas a unos pasos de casa.
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-8">
+            El marketplace de productos locales de Acámbaro. Encuentra lo que necesitas en tiendas de tu comunidad.
           </p>
 
-          {/* Search */}
           <form method="GET" className="max-w-xl mx-auto mb-8">
-            <div className="flex gap-2 bg-white rounded-2xl p-2 shadow-xl">
+            <div className="flex gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 shadow-xl">
               <div className="flex-1 flex items-center gap-2 px-3">
                 <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  name="q"
-                  defaultValue={params.q}
-                  placeholder="Buscar productos, servicios o negocios..."
-                  className="flex-1 outline-none text-gray-900 text-sm"
-                />
+                <input name="q" defaultValue={params.q} placeholder="Buscar productos o tiendas..." className="flex-1 outline-none bg-transparent text-white placeholder-gray-400 text-sm" />
               </div>
-              <button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+              <button type="submit" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                 Buscar
               </button>
             </div>
           </form>
 
-          {/* CTAs */}
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link href="#negocios" className="bg-white text-brand-700 font-semibold px-6 py-3 rounded-xl hover:bg-brand-50 transition-colors text-sm flex items-center gap-2 shadow-lg">
-              <Store className="w-4 h-4" />
-              Explorar negocios
+            <Link href="#productos" className="bg-white text-brand-800 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm flex items-center gap-2 shadow-lg">
+              <Package className="w-4 h-4" /> Ver productos
             </Link>
-            <Link href="/register?role=business" className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-semibold px-6 py-3 rounded-xl transition-colors text-sm flex items-center gap-2 shadow-lg">
-              Publicar mi negocio
-              <ArrowRight className="w-4 h-4" />
+            <Link href="/register?role=business" className="bg-brand-500/20 hover:bg-brand-500/30 border border-brand-400/50 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm flex items-center gap-2">
+              Publicar mi tienda <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-6 mt-10 text-sm text-brand-100 flex-wrap">
-            <div className="flex items-center gap-1.5"><Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />{totalCount} negocios activos</div>
+          <div className="flex items-center justify-center gap-6 mt-10 text-sm text-gray-400 flex-wrap">
+            <div className="flex items-center gap-1.5"><Star className="w-4 h-4 text-brand-400 fill-brand-400" />{totalCount} tiendas activas</div>
             <div className="flex items-center gap-1.5"><Ticket className="w-4 h-4" />Cupones con QR</div>
             <div className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" />Negocios verificados</div>
-            <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /><Link href="/map" className="hover:text-white transition-colors">Ver en mapa</Link></div>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              <Link href="/map" className="hover:text-white transition-colors">Ver en mapa</Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Category pills ── */}
-      <section className="max-w-7xl mx-auto px-4 pt-8 pb-2">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <Link href="/" className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${!cat ? "bg-brand-600 text-white border-brand-600" : "bg-white text-gray-600 border-gray-200 hover:border-brand-300"}`}>
-            Todos
-          </Link>
-          {BUSINESS_CATEGORIES.map((c) => (
-            <Link key={c} href={`/?category=${encodeURIComponent(c)}`}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${cat === c ? "bg-brand-600 text-white border-brand-600" : "bg-white text-gray-600 border-gray-200 hover:border-brand-300"}`}>
-              {c}
+      {/* Filtros — solo vista filtrada */}
+      {isFiltered && (
+        <section className="max-w-7xl mx-auto px-4 pt-8 pb-2">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <Link href="/" className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${!cat ? "bg-brand-500 text-white border-brand-500" : "bg-white text-slate-600 border-slate-300 hover:border-brand-400 dark:bg-white/5 dark:text-gray-300 dark:border-white/20 dark:hover:border-brand-400"}`}>
+              Todos
             </Link>
-          ))}
-        </div>
-      </section>
+            {BUSINESS_CATEGORIES.map((c) => (
+              <Link key={c} href={`/?category=${encodeURIComponent(c)}`}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${cat === c ? "bg-brand-500 text-white border-brand-500" : "bg-white text-slate-600 border-slate-300 hover:border-brand-400 dark:bg-white/5 dark:text-gray-300 dark:border-white/20 dark:hover:border-brand-400"}`}>
+                {c}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* ── Main content ── */}
-      <div id="negocios" className="max-w-7xl mx-auto px-4 pb-16 pt-4">
-        {isFiltered ? (
-          /* Filtered view — flat grid */
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">
-                {cat || `Resultados para "${params.q}"`}
-                <span className="ml-2 text-sm font-normal text-gray-400">({totalCount})</span>
-              </h2>
-              <Link href="/" className="text-sm text-brand-600 hover:underline">Limpiar filtros</Link>
+      {isFiltered ? (
+        <div className="max-w-7xl mx-auto px-4 pb-16 pt-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              {cat || `Resultados para "${params.q}"`}
+              <span className="ml-2 text-sm font-normal text-slate-400 dark:text-gray-500">({totalCount})</span>
+            </h2>
+            <Link href="/" className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Limpiar filtros</Link>
+          </div>
+          {businesses.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-4xl mb-3">🔍</p>
+              <p className="text-slate-400 dark:text-gray-400 mb-4">Sin resultados</p>
+              <Link href="/" className="btn-primary text-sm">Ver todos</Link>
             </div>
-            {businesses.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-4xl mb-3">🔍</p>
-                <p className="text-gray-500 mb-4">Sin resultados para tu búsqueda</p>
-                <Link href="/" className="btn-primary text-sm">Ver todos</Link>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {businesses.map((b) => <BusinessCard key={b.id} business={b} />)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* ── Productos Destacados — Reel ── */}
+          <section id="productos" className="py-14 overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 mb-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Productos Destacados</h2>
+                  <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Lo mejor de las tiendas locales de Acámbaro</p>
+                </div>
+                <Link href="#tiendas" className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1 border border-slate-200 hover:border-brand-300 dark:border-white/20 dark:hover:border-brand-400/50 px-4 py-2 rounded-xl transition-all">
+                  Ver tiendas <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
-            ) : (
+            </div>
+            <ProductsReel items={FEATURED} />
+          </section>
+
+          {/* ── Explorar por Categoría ── */}
+          <section id="categorias" className="py-14 bg-slate-100/80 dark:bg-black/20">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Explorar por Categoría</h2>
+                <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Encuentra exactamente lo que buscas</p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {FEATURED_CATEGORIES.map((fc) => (
+                  <Link key={fc.name} href={`/?category=${encodeURIComponent(fc.name)}`}
+                    className="group card hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 dark:hover:bg-white/10 transition-all duration-200">
+                    <div className="p-4 pb-2">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors leading-tight block">{fc.name}</span>
+                      <span className="text-xs text-slate-500 dark:text-gray-500 mt-0.5 block">{fc.desc}</span>
+                    </div>
+                    <div className="relative h-28 overflow-hidden">
+                      <Image src={fc.image} alt={fc.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300 opacity-70 group-hover:opacity-90" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="flex gap-2 overflow-x-auto mt-6 pb-1">
+                {BUSINESS_CATEGORIES.filter((c) => !FEATURED_CATEGORIES.find((fc) => fc.name === c)).map((c) => (
+                  <Link key={c} href={`/?category=${encodeURIComponent(c)}`}
+                    className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:border-brand-400/50 hover:text-brand-600 dark:border-white/15 dark:bg-white/5 dark:text-gray-300 dark:hover:border-brand-400/50 dark:hover:text-brand-300 transition-all">
+                    {c}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Por qué Acom-Di ── */}
+          <section className="max-w-7xl mx-auto px-4 py-14">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">¿Por qué comprar en Acom-Di?</h2>
+            <p className="text-slate-500 dark:text-gray-400 text-center text-sm mb-10">Conectamos a compradores con los mejores negocios locales de Acámbaro</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { icon: <Store className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Locales", desc: "Apoya directamente a los emprendedores de Acámbaro, Guanajuato." },
+                { icon: <Ticket className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Cupones con QR", desc: "Descuentos exclusivos canjeables en tienda con tu celular." },
+                { icon: <ShieldCheck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Verificados", desc: "Todos los negocios pasan verificación antes de publicarse." },
+                { icon: <Truck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Entrega en la Ciudad", desc: "Muchos negocios ofrecen entrega a domicilio en Acámbaro." },
+                { icon: <MapPin className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Mapa Interactivo", desc: "Encuentra negocios cerca de ti con nuestro mapa integrado." },
+                { icon: <Star className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Reseñas Reales", desc: "Lee opiniones de otros clientes antes de hacer tu compra." },
+              ].map((f) => (
+                <div key={f.title} className="card p-5 flex gap-4 hover:shadow-md hover:border-brand-200 dark:hover:border-brand-500/30 transition-colors">
+                  <div className="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 flex items-center justify-center flex-shrink-0">{f.icon}</div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">{f.title}</h3>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Todas las Tiendas ── */}
+          <section id="tiendas" className="py-14 bg-slate-100/80 dark:bg-black/20">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Todas las Tiendas</h2>
+                  <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">{totalCount} tiendas disponibles en Acámbaro</p>
+                </div>
+                <Link href="/map" className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1 border border-slate-200 hover:border-brand-300 dark:border-white/20 dark:hover:border-brand-400/50 px-4 py-2 rounded-xl transition-all">
+                  <MapPin className="w-3.5 h-3.5" /> Ver en mapa
+                </Link>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {businesses.map((b) => <BusinessCard key={b.id} business={b} />)}
               </div>
-            )}
-          </>
-        ) : (
-          /* Default view — two sections */
-          <div className="space-y-12">
-            {/* Servicios */}
-            {serviceBusinesses.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">🛠️ Servicios populares</h2>
-                    <p className="text-gray-500 text-sm mt-0.5">Contrata directamente desde tu cel</p>
-                  </div>
-                  <Link href="/?category=Servicios+del+hogar" className="text-sm text-brand-600 font-medium hover:underline flex items-center gap-1">
-                    Ver todos <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {serviceBusinesses.map((b) => <BusinessCard key={b.id} business={b} />)}
-                </div>
-              </section>
-            )}
+            </div>
+          </section>
 
-            {/* Productos y tiendas */}
-            {productBusinesses.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">🏪 Tiendas y productos</h2>
-                    <p className="text-gray-500 text-sm mt-0.5">Artículos, herramientas y más</p>
-                  </div>
-                  <Link href="/map" className="text-sm text-brand-600 font-medium hover:underline flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> Ver en mapa
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {productBusinesses.map((b) => <BusinessCard key={b.id} business={b} />)}
-                </div>
-              </section>
-            )}
-
-            {/* CTA para registrarse como negocio */}
-            <section className="bg-gradient-to-r from-brand-600 to-orange-500 rounded-2xl p-8 text-white text-center">
-              <h3 className="text-2xl font-bold mb-2">¿Tienes un negocio en Acámbaro?</h3>
-              <p className="text-brand-100 mb-6">Publica tus productos y servicios gratis. Llega a más clientes con cupones digitales y perfil propio.</p>
-              <Link href="/register?role=business" className="bg-white text-brand-700 font-bold px-8 py-3 rounded-xl hover:bg-brand-50 transition-colors inline-flex items-center gap-2">
-                Publicar mi negocio gratis
-                <ArrowRight className="w-4 h-4" />
+          {/* ── CTA ── */}
+          <section className="max-w-7xl mx-auto px-4 py-14">
+            <div className="relative overflow-hidden rounded-3xl p-10 text-white text-center border border-brand-500/30"
+              style={{ background: "linear-gradient(135deg, #013F4A, #068562)" }}>
+              <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <div className="absolute top-0 left-0 w-40 h-40 bg-white rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-0 w-56 h-56 bg-white rounded-full blur-3xl" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 relative z-10">¿Tienes una tienda en Acámbaro?</h3>
+              <p className="text-brand-100 mb-7 max-w-xl mx-auto relative z-10">
+                Publica tus productos gratis y llega a más clientes con cupones digitales y perfil propio.
+              </p>
+              <Link href="/register?role=business"
+                className="bg-white text-brand-800 font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors inline-flex items-center gap-2 relative z-10">
+                Publicar mi tienda gratis <ArrowRight className="w-4 h-4" />
               </Link>
-            </section>
-          </div>
-        )}
-      </div>
+            </div>
+          </section>
+        </>
+      )}
     </>
   );
 }

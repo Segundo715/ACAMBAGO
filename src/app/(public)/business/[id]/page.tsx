@@ -41,7 +41,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="card mb-6 overflow-visible">
-        <div className="relative h-52 bg-gradient-to-br from-brand-100 to-brand-200 rounded-t-2xl overflow-hidden">
+        <div className="relative h-52 bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/30 dark:to-brand-800/30 rounded-t-2xl overflow-hidden">
           {business.banner_url ? (
             <Image src={business.banner_url} alt="Banner" fill className="object-cover" />
           ) : business.image_url ? (
@@ -59,15 +59,15 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
           <div className="mt-3">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{business.name}</h1>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
-                  <span className="badge bg-brand-100 text-brand-700">
+                  <span className="badge bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300">
                     <Tag className="w-3 h-3 mr-1" />
                     {business.category}
                   </span>
                   <div className="flex items-center gap-1">
                     <StarRating value={Math.round(business.rating_avg)} readonly size="sm" />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {Number(business.rating_avg).toFixed(1)} ({business.rating_count} reseñas)
                     </span>
                   </div>
@@ -87,10 +87,10 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
             </div>
 
             {business.description && (
-              <p className="text-gray-600 mt-3">{business.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 mt-3">{business.description}</p>
             )}
 
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-3">
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mt-3">
               <MapPin className="w-4 h-4 text-brand-500" />
               {business.address}
             </div>
@@ -103,26 +103,26 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
           {/* Products */}
           {products.length > 0 && (
             <section>
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Package className="w-5 h-5 text-brand-600" />
                 Productos
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {products.map((p) => (
                   <div key={p.id} className="card flex gap-3 p-4">
-                    <div className="w-16 h-16 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-white/10 flex-shrink-0 overflow-hidden flex items-center justify-center">
                       {p.image_url ? (
                         <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
                       ) : (
-                        <Package className="w-6 h-6 text-gray-400" />
+                        <Package className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
                       {p.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>
                       )}
-                      <p className="text-brand-600 font-bold text-sm mt-1">
+                      <p className="text-brand-600 dark:text-brand-400 font-bold text-sm mt-1">
                         ${Number(p.price).toLocaleString("es-MX")} MXN
                       </p>
                     </div>
@@ -138,11 +138,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
 
         {/* Sidebar: Coupons */}
         <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             🎟️ Cupones disponibles
           </h2>
           {coupons.length === 0 ? (
-            <div className="card p-6 text-center text-gray-500 text-sm">
+            <div className="card p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
               Sin cupones activos por el momento
             </div>
           ) : (

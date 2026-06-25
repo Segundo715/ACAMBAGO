@@ -1,28 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
-import Link from "next/link";
 import { Business } from "@/types";
 import "leaflet/dist/leaflet.css";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-const customIcon = new L.Icon({
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+const ACAMBARO_CENTER: [number, number] = [20.0319, -100.7273];
 
 interface Props {
   businesses: Business[];
@@ -30,60 +13,69 @@ interface Props {
   zoom?: number;
 }
 
-const ACAMBARO_CENTER: [number, number] = [20.0319, -100.7273];
-
 export default function BusinessMap({ businesses, center = ACAMBARO_CENTER, zoom = 14 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // Clave estable por montaje — fuerza recreación limpia en HMR
-  const [mapKey] = useState(() => `map-${Math.random().toString(36).slice(2)}`);
+  const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (containerRef.current) {
-        const el = containerRef.current.querySelector(".leaflet-container") as any;
-        if (el?._leaflet_id) delete el._leaflet_id;
-      }
-    };
-  }, []);
+    if (!containerRef.current) return;
 
-  const withCoords = businesses.filter((b) => b.latitude && b.longitude);
+    // Leaflet init directo en el effect — funciona correctamente con React Strict Mode
+    // porque el cleanup llama map.remove() que limpia _leaflet_id antes del re-mount
+    const map = L.map(containerRef.current, {
+      center,
+      zoom,
+      scrollWheelZoom: true,
+      zoomControl: true,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Ícono de marca
+    const brandIcon = L.divIcon({
+      html: `<div style="width:26px;height:26px;background:#068562;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 26],
+      popupAnchor: [0, -28],
+      className: "",
+    });
+
+    // Marcadores
+    businesses
+      .filter((b) => b.latitude && b.longitude)
+      .forEach((b) => {
+        L.marker([b.latitude!, b.longitude!], { icon: brandIcon })
+          .bindPopup(
+            `<div style="min-width:180px;padding:4px 2px">
+              <b style="font-size:13px;color:#0f172a;line-height:1.3">${b.name}</b>
+              <p style="font-size:11px;color:#64748b;margin:2px 0 0">${b.category}</p>
+              <p style="font-size:11px;color:#f59e0b;margin:2px 0 0">⭐ ${Number(b.rating_avg).toFixed(1)} (${b.rating_count} reseñas)</p>
+              <p style="font-size:11px;color:#94a3b8;margin:2px 0 0">${b.address}</p>
+              <a href="/business/${b.id}"
+                style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:white;background:#068562;padding:5px 12px;border-radius:8px;text-decoration:none">
+                Ver negocio →
+              </a>
+            </div>`
+          )
+          .addTo(map);
+      });
+
+    mapRef.current = map;
+
+    return () => {
+      // map.remove() limpia _leaflet_id del DOM, permitiendo re-init correcto en Strict Mode
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [businesses, center, zoom]);
 
   return (
-    <div ref={containerRef} style={{ height: "100%", width: "100%" }}>
-      <MapContainer
-        key={mapKey}
-        center={center}
-        zoom={zoom}
-        style={{ height: "100%", width: "100%" }}
-        className="rounded-xl"
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {withCoords.map((business) => (
-          <Marker
-            key={business.id}
-            position={[business.latitude!, business.longitude!]}
-            icon={customIcon}
-          >
-            <Popup>
-              <div className="min-w-[160px]">
-                <p className="font-semibold text-gray-900 text-sm">{business.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{business.category}</p>
-                <p className="text-xs text-gray-500 mt-0.5">⭐ {Number(business.rating_avg).toFixed(1)}</p>
-                <Link
-                  href={`/business/${business.id}`}
-                  className="inline-block mt-2 text-xs font-medium text-brand-600 hover:underline"
-                >
-                  Ver negocio →
-                </Link>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
+    <div
+      ref={containerRef}
+      style={{ height: "100%", width: "100%", borderRadius: "0.75rem" }}
+    />
   );
 }

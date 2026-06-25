@@ -1,17 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isCouponValid } from "@/lib/utils";
 import { QRPayload } from "@/types";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+
+    const body = await request.json();
+    const supabase = await createClient();
 
     // Parse QR data
     let payload: QRPayload;
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
       .from("businesses")
       .select("id, owner_id, name")
       .eq("id", business_id)
-      .eq("owner_id", user.id)
+      .eq("owner_id", userId)
       .single();
 
     if (!business) {

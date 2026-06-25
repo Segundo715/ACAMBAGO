@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const supabase = await createClient();
     const body = await request.json();
     const { name, description, category, address, latitude, longitude, whatsapp } = body;
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from("businesses")
       .insert({
-        owner_id: user.id,
+        owner_id: userId,
         name,
         description,
         category,
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     // Update profile role to business
-    await supabase.from("profiles").update({ role: "business" }).eq("id", user.id);
+    await supabase.from("profiles").update({ role: "business" }).eq("id", userId);
 
     return NextResponse.json({ business: data }, { status: 201 });
   } catch (err) {

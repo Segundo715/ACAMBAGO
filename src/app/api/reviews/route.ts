@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const supabase = await createClient();
     const { business_id, rating, comment } = await request.json();
 
     if (!business_id || !rating || rating < 1 || rating > 5) {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabase
       .from("reviews")
-      .insert({ business_id, user_id: user.id, rating, comment })
+      .insert({ business_id, user_id: userId, rating, comment })
       .select("*, profiles(name)")
       .single();
 

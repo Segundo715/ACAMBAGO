@@ -10,7 +10,7 @@ export default function PapeleriaPage() {
       coupons={DEMO_COUPONS_PAPELERIA}
       reviews={DEMO_REVIEWS_PAPELERIA}
       emoji="📚"
-      productLabel="Productos y servicios"
+      productLabel="Productos disponibles"
     />
   );
 }

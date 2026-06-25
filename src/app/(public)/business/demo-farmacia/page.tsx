@@ -10,7 +10,7 @@ export default function FarmaciaPage() {
       coupons={DEMO_COUPONS_FARMACIA}
       reviews={DEMO_REVIEWS_FARMACIA}
       emoji="💊"
-      productLabel="Productos y servicios de salud"
+      productLabel="Productos disponibles"
     />
   );
 }

@@ -25,8 +25,16 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session if it exists — no route protection in demo mode
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+
+  if (isProtected && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    return NextResponse.redirect(loginUrl);
+  }
 
   return supabaseResponse;
 }

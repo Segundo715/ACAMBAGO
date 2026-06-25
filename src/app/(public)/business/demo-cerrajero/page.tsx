@@ -1,16 +1,16 @@
 import DemoBusinessPage from "@/components/business/DemoBusinessPage";
-import { DEMO_BUSINESSES, DEMO_SERVICES_CERRAJERO, DEMO_COUPONS_CERRAJERO, DEMO_REVIEWS_CERRAJERO } from "@/lib/demo-data";
+import { DEMO_BUSINESSES, DEMO_PRODUCTS_ZAPATERIA, DEMO_COUPONS_CERRAJERO, DEMO_REVIEWS_CERRAJERO } from "@/lib/demo-data";
 
-export default function CerrajeroPage() {
+export default function ZapateriaPage() {
   const business = DEMO_BUSINESSES.find((b) => b.id === "demo-cerrajero")!;
   return (
     <DemoBusinessPage
       business={business}
-      products={DEMO_SERVICES_CERRAJERO}
+      products={DEMO_PRODUCTS_ZAPATERIA}
       coupons={DEMO_COUPONS_CERRAJERO}
       reviews={DEMO_REVIEWS_CERRAJERO}
-      emoji="🔑"
-      productLabel="Servicios de cerrajería"
+      emoji="👟"
+      productLabel="Productos disponibles"
     />
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { generateCouponCode } from "@/lib/utils";
 import { QRCodeSVG } from "qrcode.react";
@@ -20,6 +21,7 @@ export default function NewCouponPage() {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ code: string; qr_data: string } | null>(null);
   const router = useRouter();
+  const { user, isLoaded } = useUser();
   const supabase = createClient();
 
   const generatePreview = () => {
@@ -31,8 +33,7 @@ export default function NewCouponPage() {
     e.preventDefault();
     setSaving(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("No autorizado"); setSaving(false); return; }
+    if (!isLoaded || !user) { toast.error("No autorizado"); setSaving(false); return; }
 
     const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
     if (!biz) { toast.error("No tienes un negocio registrado"); setSaving(false); return; }
@@ -66,23 +67,23 @@ export default function NewCouponPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/business/coupons" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-brand-600 mb-6 transition-colors">
+      <Link href="/dashboard/business/coupons" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Volver a cupones
       </Link>
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-          <Ticket className="w-5 h-5 text-orange-600" />
+        <div className="w-10 h-10 bg-orange-50 dark:bg-orange-500/10 rounded-xl flex items-center justify-center">
+          <Ticket className="w-5 h-5 text-orange-600 dark:text-orange-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Crear cupón</h1>
-          <p className="text-gray-500 text-sm">Se generará un código QR automáticamente</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Crear cupón</h1>
+          <p className="text-gray-500 dark:text-slate-400 text-sm">Se generará un código QR automáticamente</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Información del cupón</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">Información del cupón</h2>
 
           <div>
             <label className="label">Título del cupón *</label>
@@ -123,7 +124,7 @@ export default function NewCouponPage() {
         {/* Preview */}
         {title && value && (
           <div className="card p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">Vista previa del QR</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Vista previa del QR</h2>
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <div className="bg-brand-600 text-white rounded-2xl p-6 text-center">
                 <p className="text-4xl font-bold">
@@ -132,12 +133,12 @@ export default function NewCouponPage() {
                 <p className="text-sm opacity-80 mt-1">DESCUENTO</p>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{title}</p>
-                {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
-                <div className="mt-3 bg-gray-50 rounded-xl p-4 flex flex-col items-center gap-2">
+                <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+                {description && <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{description}</p>}
+                <div className="mt-3 bg-gray-50 dark:bg-white/5 rounded-xl p-4 flex flex-col items-center gap-2">
                   <QRCodeSVG value={JSON.stringify({ coupon_code: "ACAM-PREVIEW", business_id: "preview" })} size={120} />
-                  <p className="text-xs text-gray-400 font-mono">ACAM-XXXXXX</p>
-                  <p className="text-xs text-gray-400">Se generará al guardar</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 font-mono">ACAM-XXXXXX</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500">Se generará al guardar</p>
                 </div>
               </div>
             </div>

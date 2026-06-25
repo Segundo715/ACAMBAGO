@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import { Settings, MapPin, Save, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SettingsPage() {
+  const { user, isLoaded } = useUser();
   const [business, setBusiness] = useState<Partial<Business>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -15,9 +17,8 @@ export default function SettingsPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    if (!isLoaded || !user) return;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const { data } = await supabase.from("businesses").select("*").eq("owner_id", user.id).single();
       if (data) {
         setBusiness(data as Business);
@@ -28,14 +29,12 @@ export default function SettingsPage() {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [isLoaded, user?.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    setSaving(true);
 
     let image_url = business.image_url;
 
@@ -62,20 +61,22 @@ export default function SettingsPage() {
     };
 
     if (isNew) {
+      // Ensure profile exists
+      await supabase.from("profiles").upsert({ id: user.id, name: user.fullName ?? user.firstName ?? user.emailAddresses[0]?.emailAddress ?? "Usuario", role: "business" });
+
       const { error } = await supabase.from("businesses").insert({ ...payload, is_approved: false });
       if (!error) {
-        await supabase.from("profiles").update({ role: "business" }).eq("id", user.id);
         toast.success("Negocio registrado. Pendiente de aprobación.");
         setIsNew(false);
       } else {
-        toast.error("Error al registrar el negocio");
+        toast.error("Error al registrar el negocio: " + error.message);
       }
     } else {
       const { error } = await supabase.from("businesses").update(payload).eq("owner_id", user.id);
       if (!error) {
         toast.success("Cambios guardados");
       } else {
-        toast.error("Error al guardar");
+        toast.error("Error al guardar: " + error.message);
       }
     }
 
@@ -85,25 +86,25 @@ export default function SettingsPage() {
   const update = (key: keyof Business, val: string | number) =>
     setBusiness((prev) => ({ ...prev, [key]: val }));
 
-  if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded-xl" />)}</div>;
+  if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map((i) => <div key={i} className="h-12 bg-slate-100 dark:bg-white/5 rounded-xl" />)}</div>;
 
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-          <Settings className="w-5 h-5 text-gray-600" />
+        <div className="w-10 h-10 bg-slate-100 dark:bg-white/10 rounded-xl flex items-center justify-center">
+          <Settings className="w-5 h-5 text-slate-600 dark:text-slate-300" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             {isNew ? "Registrar negocio" : "Configuración del negocio"}
           </h1>
-          <p className="text-gray-500 text-sm">{isNew ? "Completa los datos de tu negocio" : "Actualiza la información de tu negocio"}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">{isNew ? "Completa los datos de tu negocio" : "Actualiza la información de tu negocio"}</p>
         </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Información general</h2>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Información general</h2>
 
           <div>
             <label className="label">Nombre del negocio *</label>
@@ -147,13 +148,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Location */}
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <MapPin className="w-4 h-4 text-brand-600" />
             Ubicación en el mapa
           </h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Ingresa las coordenadas de tu negocio. Puedes obtenerlas en Google Maps haciendo clic en tu ubicación.
           </p>
           <div className="grid grid-cols-2 gap-4">
@@ -166,7 +166,7 @@ export default function SettingsPage() {
               <input type="number" step="any" value={business.longitude ?? ""} onChange={(e) => update("longitude", parseFloat(e.target.value))} className="input" placeholder="-100.7273" />
             </div>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             Acámbaro centro: 20.0319, -100.7273
           </p>
         </div>

@@ -105,10 +105,16 @@ export default function DemoBusinessPage({
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {products.map((p) => (
-                  <div key={p.id} className="card p-4 flex flex-col gap-3">
-                    <div className="flex gap-3">
-                      <div className="w-16 h-16 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 flex items-center justify-center text-2xl">
-                        {emoji}
+                  <div key={p.id} className="card p-4 flex flex-col gap-3 relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
+                    {/* Link invisible que cubre la card, por debajo del botón */}
+                    <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
+                    <div className="flex gap-3 relative z-10">
+                      <div className="w-16 h-16 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden">
+                        {p.image_url ? (
+                          <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">{emoji}</div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
@@ -122,9 +128,11 @@ export default function DemoBusinessPage({
                         </p>
                       </div>
                     </div>
-                    <AddToCartButton
-                      product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price }}
-                    />
+                    <div className="relative z-10">
+                      <AddToCartButton
+                        product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

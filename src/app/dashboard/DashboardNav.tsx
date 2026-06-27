@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Ticket, Settings, ScanLine } from "lucide-react";
+import { LayoutDashboard, Package, Ticket, Settings, ScanLine, Star, ShoppingBag, BarChart2 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard/business",              label: "Resumen",       icon: LayoutDashboard },
   { href: "/dashboard/business/products",     label: "Productos",     icon: Package },
+  { href: "/dashboard/business/orders",       label: "Pedidos",       icon: ShoppingBag },
   { href: "/dashboard/business/coupons",      label: "Cupones",       icon: Ticket },
   { href: "/dashboard/business/coupons/scan", label: "Escáner QR",    icon: ScanLine },
+  { href: "/dashboard/business/reviews",      label: "Reseñas",       icon: Star },
+  { href: "/dashboard/business/analytics",    label: "Estadísticas",  icon: BarChart2 },
   { href: "/dashboard/business/settings",     label: "Configuración", icon: Settings },
 ];
 
@@ -16,9 +19,12 @@ export default function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 p-3 space-y-1">
+    <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
       {navItems.map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href || (href !== "/dashboard/business" && pathname.startsWith(href));
+        const isActive =
+          href === "/dashboard/business"
+            ? pathname === href
+            : pathname.startsWith(href);
         return (
           <Link key={href} href={href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${

@@ -3,12 +3,15 @@ import DesktopSidebar from "@/components/ui/DesktopSidebar";
 import Footer from "@/components/ui/Footer";
 import MobileNav from "@/components/ui/MobileNav";
 import CartRoot from "@/components/ui/CartRoot";
+import DemoBanner from "@/components/ui/DemoBanner";
 import { CartProvider } from "@/lib/cart-context";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider>
       <div className="min-h-screen">
+        <DemoBanner />
+
         {/* Sidebar izquierdo solo en desktop (fixed, fuera de flujo) */}
         <DesktopSidebar />
 

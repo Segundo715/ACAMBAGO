@@ -4,15 +4,30 @@ import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Store, User } from "lucide-react";
+import { getDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
 
 export default function UserInfo() {
   const { user, isLoaded } = useUser();
   const [name, setName] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState<"buyer" | "seller" | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    const mode = getDemoMode();
+    setDemoMode(mode);
+    if (mode === "buyer") {
+      setName(DEMO_BUYER.name);
+      setRole("client");
+    } else if (mode === "seller") {
+      setName(DEMO_SELLER.name);
+      setBusinessName(DEMO_SELLER.businessName);
+      setRole("business");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (demoMode || !isLoaded || !user) return;
 
     const supabase = createClient();
     const load = async () => {
@@ -37,9 +52,9 @@ export default function UserInfo() {
       }
     };
     load();
-  }, [isLoaded, user?.id]);
+  }, [isLoaded, user?.id, demoMode]);
 
-  if (!isLoaded || !user || !name) return null;
+  if (!name) return null;
 
   return (
     <div className="px-3 py-3 border-b border-slate-200 dark:border-white/10">

@@ -89,7 +89,7 @@ export default function Navbar() {
                     }
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{name ?? user.email}</p>
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{name ?? "Usuario"}</p>
                     <p className="text-[10px] text-slate-400 capitalize">{role ?? "usuario"}</p>
                   </div>
                 </div>

@@ -618,6 +618,102 @@ export const DEMO_PRODUCTS_FRUTERIA: Product[] = [
   { id: "fr4", business_id: "demo-fruteria", name: "Uvas y Fresas de Temporada 1kg", description: "Frutas seleccionadas, dulces y frescas. Ideales para postres y desayunos", price: 85, image_url: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400&q=80", is_available: true, created_at: D, updated_at: D },
 ];
 
+export const DEMO_ALL_PRODUCTS: Product[] = [
+  ...DEMO_PRODUCTS, ...DEMO_PRODUCTS_ROPA, ...DEMO_PRODUCTS_ZAPATERIA,
+  ...DEMO_PRODUCTS_ELECTRONICA, ...DEMO_PRODUCTS_JOYERIA, ...DEMO_PRODUCTS_FARMACIA,
+  ...DEMO_PRODUCTS_COSMETICOS, ...DEMO_PRODUCTS_PETSHOP, ...DEMO_PRODUCTS_PAPELERIA,
+  ...DEMO_PRODUCTS_MUEBLES, ...DEMO_PRODUCTS_ARTESANIAS, ...DEMO_PRODUCTS_DEPORTES,
+  ...DEMO_PRODUCTS_OPTICA, ...DEMO_PRODUCTS_FLORISTERIA, ...DEMO_PRODUCTS_PANADERIA,
+  ...DEMO_PRODUCTS_ABARROTES, ...DEMO_PRODUCTS_JUGUETERIA, ...DEMO_PRODUCTS_LIBRERIA,
+  ...DEMO_PRODUCTS_RELOJERIA, ...DEMO_PRODUCTS_MUSICA, ...DEMO_PRODUCTS_COMPUTACION,
+  ...DEMO_PRODUCTS_HERBOLARIA, ...DEMO_PRODUCTS_UNIFORMES, ...DEMO_PRODUCTS_BICICLETAS,
+  ...DEMO_PRODUCTS_TAPICERIA, ...DEMO_PRODUCTS_REPOSTERIA, ...DEMO_PRODUCTS_MOVILFIX,
+  ...DEMO_PRODUCTS_PETCARE, ...DEMO_PRODUCTS_NINOS, ...DEMO_PRODUCTS_ESTETICA,
+  ...DEMO_PRODUCTS_CRISTALERIA, ...DEMO_PRODUCTS_FRUTERIA,
+];
+
+export const DEMO_ALL_BUSINESSES_LIST = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
+
+export interface ProductExtra {
+  original_price?: number;
+  images: string[];
+  condition: "Nuevo" | "Como nuevo" | "Usado";
+  stock: number;
+  features: string[];
+}
+
+export const DEMO_PRODUCT_EXTRAS: Record<string, ProductExtra> = {
+  p1: {
+    original_price: 1099,
+    images: ["https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=80", "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=800&q=80", "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=800&q=80"],
+    condition: "Nuevo", stock: 12,
+    features: ["Potencia: 750 W", "Mandril: 1/2\" (13 mm)", "Velocidad variable: 0-3,000 RPM", "Reversa incluida", "Incluye maletín de transporte"],
+  },
+  r1: {
+    original_price: 250,
+    images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80", "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80", "https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=800&q=80"],
+    condition: "Nuevo", stock: 45,
+    features: ["100% algodón peinado", "Tallas: XS, S, M, L, XL, XXL", "12 colores disponibles", "Lavable a máquina en frío", "Cuello redondo reforzado"],
+  },
+  e1: {
+    original_price: 999,
+    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80", "https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?w=800&q=80", "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800&q=80"],
+    condition: "Nuevo", stock: 8,
+    features: ["Cancelación activa de ruido (ANC)", "Batería: hasta 30 horas", "Bluetooth 5.0", "Diseño plegable y portátil", "Sonido HD con bajos profundos"],
+  },
+  z1: {
+    original_price: 850,
+    images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80", "https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=800&q=80", "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800&q=80"],
+    condition: "Nuevo", stock: 20,
+    features: ["Suela amortiguada para running", "Material mesh transpirable", "Tallas 25 al 30 MX", "Unisex", "Suela antideslizante"],
+  },
+  j1: {
+    original_price: 550,
+    images: ["https://images.unsplash.com/photo-1535632787350-4e68ef0ac584?w=800&q=80", "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=80", "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80"],
+    condition: "Nuevo", stock: 15,
+    features: ["Plata 925 certificada", "Perla cultivada de agua dulce 8mm", "Cierre de rosca hipoalergénico", "Incluye caja de regalo", "Garantía de autenticidad"],
+  },
+  e4: {
+    original_price: 1599,
+    images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80", "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=800&q=80", "https://images.unsplash.com/photo-1544117519-31a4b719223d?w=800&q=80"],
+    condition: "Nuevo", stock: 5,
+    features: ["Monitor cardíaco 24/7", "GPS integrado", "Pantalla AMOLED 1.4\"", "Resistente al agua 5ATM", "Batería: 14 días en modo estándar"],
+  },
+  a1: {
+    images: ["https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&q=80", "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&q=80", "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"],
+    condition: "Nuevo", stock: 7,
+    features: ["Pieza artesanal única", "Barro negro modelado a mano", "Altura: 20 cm aprox.", "Técnicas tradicionales locales", "Sellada con barniz protector"],
+  },
+  d1: {
+    original_price: 420,
+    images: ["https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80", "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=800&q=80"],
+    condition: "Nuevo", stock: 18,
+    features: ["Talla oficial #5", "Cubierta PVC termosoldada", "Vejiga de látex alta retención", "Apto para cancha y pasto", "Peso reglamentario 410-450g"],
+  },
+  ro1: {
+    images: ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80", "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&q=80", "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=800&q=80"],
+    condition: "Nuevo", stock: 3,
+    features: ["Porción para 20 personas", "Diseño completamente personalizable", "3 sabores de relleno disponibles", "Pasta fondant o crema chantilly", "Pedido mínimo 48 hrs de anticipación"],
+  },
+  cp1: {
+    original_price: 14999,
+    images: ["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80", "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=800&q=80"],
+    condition: "Nuevo", stock: 4,
+    features: ["Intel Core i5 12va gen", "RAM 8GB DDR4 ampliable a 16GB", "SSD 256GB", "Pantalla Full HD 15.6\" IPS", "Windows 11 Home activado"],
+  },
+  fl1: {
+    original_price: 480,
+    images: ["https://images.unsplash.com/photo-1490750967868-88df5691cc0e?w=800&q=80", "https://images.unsplash.com/photo-1559563458-527698bf5295?w=800&q=80", "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=800&q=80"],
+    condition: "Nuevo", stock: 10,
+    features: ["12 rosas importadas frescas", "Cortadas el mismo día", "Base de agua con follaje incluida", "Moño decorativo incluido", "Entrega a domicilio en Acámbaro"],
+  },
+  pa1: {
+    images: ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80", "https://images.unsplash.com/photo-1549007953-2f2dc0b24019?w=800&q=80", "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80"],
+    condition: "Nuevo", stock: 5,
+    features: ["Peso: 1.5 kg aprox.", "Porción para 15-20 personas", "Bañado en tres leches artesanales", "Cubierto de crema chantilly y fresa", "Horneado fresco diariamente"],
+  },
+};
+
 // ─── CUPONES TIENDAS NUEVAS ───────────────────────────────────────────────────
 
 export const DEMO_COUPONS_EXTRA: Coupon[] = [
@@ -641,4 +737,21 @@ export const DEMO_COUPONS_EXTRA: Coupon[] = [
   { id: "cx18", business_id: "demo-estetica",    title: "10% en servicios capilares",          description: "Descuento en coloración, keratina y tratamientos de cabello.",   discount_type: "percent", value: 10, code: "ACAM-GLAM",  qr_data: JSON.stringify({ coupon_code: "ACAM-GLAM",  business_id: "demo-estetica" }),    limit_count: 40, used_count: 15, expires_at: "2026-12-31T23:59:59Z", is_active: true, created_at: D },
   { id: "cx19", business_id: "demo-cristaleria", title: "$100 en espejos decorativos",         description: "Aplica en espejos de más de $800 con instalación incluida.",      discount_type: "fixed",   value: 100, code: "ACAM-VIDRIO", qr_data: JSON.stringify({ coupon_code: "ACAM-VIDRIO", business_id: "demo-cristaleria" }), limit_count: 15, used_count: 3,  expires_at: "2026-12-31T23:59:59Z", is_active: true, created_at: D },
   { id: "cx20", business_id: "demo-fruteria",    title: "5% en canastas surtidas más de $200", description: "Descuento en canastas familiares y de restaurante.",              discount_type: "percent", value: 5,  code: "ACAM-FRUTA",  qr_data: JSON.stringify({ coupon_code: "ACAM-FRUTA",  business_id: "demo-fruteria" }),    limit_count: 80, used_count: 22, expires_at: "2026-12-31T23:59:59Z", is_active: true, created_at: D },
+];
+
+// ─── COLECCIONES GLOBALES ─────────────────────────────────────────────────────
+
+export const DEMO_ALL_COUPONS: Coupon[] = [
+  ...DEMO_COUPONS, ...DEMO_COUPONS_LAVADO, ...DEMO_COUPONS_CERRAJERO,
+  ...DEMO_COUPONS_PINTOR, ...DEMO_COUPONS_SALON, ...DEMO_COUPONS_FARMACIA,
+  ...DEMO_COUPONS_TALLER, ...DEMO_COUPONS_VETERINARIA, ...DEMO_COUPONS_PAPELERIA,
+  ...DEMO_COUPONS_MUEBLES, ...DEMO_COUPONS_ARTESANIAS, ...DEMO_COUPONS_DEPORTES,
+  ...DEMO_COUPONS_EXTRA,
+];
+
+export const DEMO_ALL_REVIEWS: Review[] = [
+  ...DEMO_REVIEWS, ...DEMO_REVIEWS_LAVADO, ...DEMO_REVIEWS_CERRAJERO,
+  ...DEMO_REVIEWS_PINTOR, ...DEMO_REVIEWS_SALON, ...DEMO_REVIEWS_FARMACIA,
+  ...DEMO_REVIEWS_TALLER, ...DEMO_REVIEWS_VETERINARIA, ...DEMO_REVIEWS_PAPELERIA,
+  ...DEMO_REVIEWS_MUEBLES, ...DEMO_REVIEWS_ARTESANIAS, ...DEMO_REVIEWS_DEPORTES,
 ];

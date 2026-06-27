@@ -35,9 +35,9 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
           >
             {/* Enlace invisible que cubre toda la card excepto el botón */}
             <Link
-              href={`/business/${item.business_id}`}
+              href={`/product/${item.id}`}
               className="absolute inset-0 z-0 rounded-2xl"
-              aria-label={`Ver ${item.business_name}`}
+              aria-label={`Ver ${item.name}`}
             />
 
             <div className="relative h-44 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/50 dark:to-brand-800/50 overflow-hidden">

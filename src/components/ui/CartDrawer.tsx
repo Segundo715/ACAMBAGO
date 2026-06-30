@@ -1,11 +1,18 @@
 "use client";
 
 import { X, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { items, removeItem, updateQty, total, count } = useCart();
+  const router = useRouter();
+
+  const handleCheckout = () => {
+    onClose();
+    router.push("/checkout");
+  };
 
   if (!isOpen) return null;
 
@@ -82,7 +89,10 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 <span className="text-sm text-slate-500 dark:text-gray-400">Total estimado</span>
                 <span className="text-xl font-bold text-slate-900 dark:text-white">{formatPrice(total)}</span>
               </div>
-              <button className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-2xl transition-colors">
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-2xl transition-colors"
+              >
                 Proceder al pago
               </button>
               <button onClick={onClose} className="w-full text-sm text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300 py-1.5 transition-colors">

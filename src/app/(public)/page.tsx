@@ -228,30 +228,6 @@ export default async function HomePage({
             </div>
           </section>
 
-          {/* ── Por qué Acom-Di ── */}
-          <section className="max-w-7xl mx-auto px-4 py-14">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">¿Por qué comprar en Acom-Di?</h2>
-            <p className="text-slate-500 dark:text-gray-400 text-center text-sm mb-10">Conectamos a compradores con los mejores negocios locales de Acámbaro</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { icon: <Store className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Locales", desc: "Apoya directamente a los emprendedores de Acámbaro, Guanajuato." },
-                { icon: <Ticket className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Cupones con QR", desc: "Descuentos exclusivos canjeables en tienda con tu celular." },
-                { icon: <ShieldCheck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Verificados", desc: "Todos los negocios pasan verificación antes de publicarse." },
-                { icon: <Truck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Entrega en la Ciudad", desc: "Muchos negocios ofrecen entrega a domicilio en Acámbaro." },
-                { icon: <MapPin className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Mapa Interactivo", desc: "Encuentra negocios cerca de ti con nuestro mapa integrado." },
-                { icon: <Star className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Reseñas Reales", desc: "Lee opiniones de otros clientes antes de hacer tu compra." },
-              ].map((f) => (
-                <div key={f.title} className="card p-5 flex gap-4 hover:shadow-md hover:border-brand-200 dark:hover:border-brand-500/30 transition-colors">
-                  <div className="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 flex items-center justify-center flex-shrink-0">{f.icon}</div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">{f.title}</h3>
-                    <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {/* ── Todas las Tiendas ── */}
           <section id="tiendas" className="py-14 bg-slate-100/80 dark:bg-black/20">
             <div className="max-w-7xl mx-auto px-4">
@@ -286,6 +262,30 @@ export default async function HomePage({
                 className="bg-white text-brand-800 font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors inline-flex items-center gap-2 relative z-10">
                 Publicar mi tienda gratis <ArrowRight className="w-4 h-4" />
               </Link>
+            </div>
+          </section>
+
+          {/* ── Por qué Acom-Di ── */}
+          <section className="max-w-7xl mx-auto px-4 py-14">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-2">¿Por qué comprar en Acom-Di?</h2>
+            <p className="text-slate-500 dark:text-gray-400 text-center text-sm mb-10">Conectamos a compradores con los mejores negocios locales de Acámbaro</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { icon: <Store className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Locales", desc: "Apoya directamente a los emprendedores de Acámbaro, Guanajuato." },
+                { icon: <Ticket className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Cupones con QR", desc: "Descuentos exclusivos canjeables en tienda con tu celular." },
+                { icon: <ShieldCheck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Verificados", desc: "Todos los negocios pasan verificación antes de publicarse." },
+                { icon: <Truck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Entrega en la Ciudad", desc: "Muchos negocios ofrecen entrega a domicilio en Acámbaro." },
+                { icon: <MapPin className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Mapa Interactivo", desc: "Encuentra negocios cerca de ti con nuestro mapa integrado." },
+                { icon: <Star className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Reseñas Reales", desc: "Lee opiniones de otros clientes antes de hacer tu compra." },
+              ].map((f) => (
+                <div key={f.title} className="card p-5 flex gap-4 hover:shadow-md hover:border-brand-200 dark:hover:border-brand-500/30 transition-colors">
+                  <div className="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 flex items-center justify-center flex-shrink-0">{f.icon}</div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-white text-sm mb-1">{f.title}</h3>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </>

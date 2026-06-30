@@ -1,44 +1,103 @@
-import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
 import ReviewSection from "./ReviewSection";
+import DemoBusinessPage from "@/components/business/DemoBusinessPage";
+import {
+  DEMO_ALL_BUSINESSES_LIST,
+  DEMO_ALL_PRODUCTS,
+  DEMO_ALL_COUPONS,
+  DEMO_ALL_REVIEWS,
+} from "@/lib/demo-data";
 import { MapPin, Phone, Tag, Package } from "lucide-react";
+import AddToCartButton from "@/components/ui/AddToCartButton";
+import Link from "next/link";
+import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 30;
 
-async function getData(id: string) {
-  const supabase = await createClient();
+const CATEGORY_EMOJI: Record<string, string> = {
+  "Ferretería": "🔧",
+  "Tienda de ropa": "👗",
+  "Zapatería": "👟",
+  "Electrónica": "📱",
+  "Joyería": "💍",
+  "Farmacia": "💊",
+  "Cosméticos": "💄",
+  "Mascotas": "🐾",
+  "Papelería": "📚",
+  "Mueblería": "🛋️",
+  "Artesanías": "🏺",
+  "Deportes": "⚽",
+  "Abarrotes": "🛒",
+  "Juguetería": "🧸",
+  "Librería": "📖",
+  "Otro": "🏪",
+};
 
-  const [bizRes, productsRes, couponsRes, reviewsRes] = await Promise.all([
-    supabase.from("businesses").select("*").eq("id", id).eq("is_approved", true).single(),
-    supabase.from("products").select("*").eq("business_id", id).eq("is_available", true),
-    supabase.from("coupons").select("*").eq("business_id", id).eq("is_active", true),
-    supabase
-      .from("reviews")
-      .select("*, profiles(name, avatar_url)")
-      .eq("business_id", id)
-      .order("created_at", { ascending: false }),
-  ]);
+async function getSupabaseData(id: string) {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    if (!url || url.includes("your-project") || url === "https://placeholder.supabase.co") return null;
 
-  if (bizRes.error || !bizRes.data) notFound();
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
 
-  return {
-    business: bizRes.data as Business,
-    products: (productsRes.data ?? []) as Product[],
-    coupons: (couponsRes.data ?? []) as Coupon[],
-    reviews: (reviewsRes.data ?? []) as Review[],
-  };
+    const [bizRes, productsRes, couponsRes, reviewsRes] = await Promise.all([
+      supabase.from("businesses").select("*").eq("id", id).eq("is_approved", true).single(),
+      supabase.from("products").select("*").eq("business_id", id).eq("is_available", true),
+      supabase.from("coupons").select("*").eq("business_id", id).eq("is_active", true),
+      supabase.from("reviews").select("*, profiles(name, avatar_url)").eq("business_id", id).order("created_at", { ascending: false }),
+    ]);
+
+    if (bizRes.error || !bizRes.data) return null;
+
+    return {
+      business: bizRes.data as Business,
+      products: (productsRes.data ?? []) as Product[],
+      coupons: (couponsRes.data ?? []) as Coupon[],
+      reviews: (reviewsRes.data ?? []) as Review[],
+    };
+  } catch {
+    return null;
+  }
 }
 
 export default async function BusinessPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { business, products, coupons, reviews } = await getData(id);
+
+  // 1. Buscar en datos demo primero
+  const demoBusiness = DEMO_ALL_BUSINESSES_LIST.find((b) => b.id === id);
+  if (demoBusiness) {
+    const products = DEMO_ALL_PRODUCTS.filter((p) => p.business_id === id);
+    const coupons = DEMO_ALL_COUPONS.filter((c) => c.business_id === id);
+    const reviews = DEMO_ALL_REVIEWS.filter((r) => r.business_id === id);
+    const emoji = CATEGORY_EMOJI[demoBusiness.category] ?? "🏪";
+    return (
+      <DemoBusinessPage
+        business={demoBusiness}
+        products={products}
+        coupons={coupons}
+        reviews={reviews}
+        emoji={emoji}
+      />
+    );
+  }
+
+  // 2. Intentar Supabase
+  const data = await getSupabaseData(id);
+  if (!data) notFound();
+
+  const { business, products, coupons, reviews } = data;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 mb-6 transition-colors">
+        ← Volver al inicio
+      </Link>
+
       {/* Header */}
       <div className="card mb-6 overflow-visible">
         <div className="relative h-52 bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/30 dark:to-brand-800/30 rounded-t-2xl overflow-hidden">
@@ -51,9 +110,9 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
         <div className="px-6 pb-6 -mt-10 relative">
           <div className="w-20 h-20 rounded-2xl bg-white shadow-lg border-2 border-white overflow-hidden flex items-center justify-center text-4xl">
             {business.image_url ? (
-              <Image src={business.image_url} alt={business.name} fill className="object-cover" />
+              <Image src={business.image_url} alt={business.name} width={80} height={80} className="object-cover" />
             ) : (
-              "🏪"
+              <span>{CATEGORY_EMOJI[business.category] ?? "🏪"}</span>
             )}
           </div>
           <div className="mt-3">
@@ -62,8 +121,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{business.name}</h1>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   <span className="badge bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300">
-                    <Tag className="w-3 h-3 mr-1" />
-                    {business.category}
+                    <Tag className="w-3 h-3 mr-1" />{business.category}
                   </span>
                   <div className="flex items-center gap-1">
                     <StarRating value={Math.round(business.rating_avg)} readonly size="sm" />
@@ -74,25 +132,14 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
               {business.whatsapp && (
-                <a
-                  href={`https://wa.me/52${business.whatsapp.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary flex items-center gap-2 text-sm"
-                >
-                  <Phone className="w-4 h-4" />
-                  WhatsApp
+                <a href={`https://wa.me/52${business.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="btn-primary flex items-center gap-2 text-sm">
+                  <Phone className="w-4 h-4" /> WhatsApp
                 </a>
               )}
             </div>
-
-            {business.description && (
-              <p className="text-gray-600 dark:text-gray-300 mt-3">{business.description}</p>
-            )}
-
+            {business.description && <p className="text-gray-600 dark:text-gray-300 mt-3">{business.description}</p>}
             <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mt-3">
-              <MapPin className="w-4 h-4 text-brand-500" />
-              {business.address}
+              <MapPin className="w-4 h-4 text-brand-500" />{business.address}
             </div>
           </div>
         </div>
@@ -100,43 +147,42 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Products */}
           {products.length > 0 && (
             <section>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-brand-600" />
-                Productos
+                <Package className="w-5 h-5 text-brand-600" /> Productos
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {products.map((p) => (
-                  <div key={p.id} className="card flex gap-3 p-4">
-                    <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-white/10 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                      {p.image_url ? (
-                        <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
-                      ) : (
-                        <Package className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-                      )}
+                  <div key={p.id} className="card p-4 flex flex-col gap-3 relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
+                    <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
+                    <div className="flex gap-3 relative z-10">
+                      <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-white/10 flex-shrink-0 overflow-hidden">
+                        {p.image_url ? (
+                          <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
+                        {p.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>}
+                        <p className="text-brand-600 dark:text-brand-400 font-bold text-sm mt-1">{formatPrice(p.price)}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
-                      {p.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>
-                      )}
-                      <p className="text-brand-600 dark:text-brand-400 font-bold text-sm mt-1">
-                        ${Number(p.price).toLocaleString("es-MX")} MXN
-                      </p>
+                    <div className="relative z-10">
+                      <AddToCartButton product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price }} />
                     </div>
                   </div>
                 ))}
               </div>
             </section>
           )}
-
-          {/* Reviews */}
           <ReviewSection businessId={business.id} initialReviews={reviews} />
         </div>
 
-        {/* Sidebar: Coupons */}
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             🎟️ Cupones disponibles
@@ -147,9 +193,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
             </div>
           ) : (
             <div className="space-y-3">
-              {coupons.map((c) => (
-                <CouponCard key={c.id} coupon={c} showQR />
-              ))}
+              {coupons.map((c) => <CouponCard key={c.id} coupon={c} showQR />)}
             </div>
           )}
         </div>

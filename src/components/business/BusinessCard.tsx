@@ -9,18 +9,23 @@ interface Props {
 
 export default function BusinessCard({ business }: Props) {
   const demoSlugs: Record<string, string> = {
-    "demo": "/business/demo",
-    "demo-lavado": "/business/demo-lavado",
-    "demo-cerrajero": "/business/demo-cerrajero",
-    "demo-pintor": "/business/demo-pintor",
-    "demo-salon": "/business/demo-salon",
-    "demo-farmacia": "/business/demo-farmacia",
-    "demo-taller": "/business/demo-taller",
+    "demo":             "/business/demo",
+    "demo-lavado":      "/business/demo-lavado",
+    "demo-cerrajero":   "/business/demo-cerrajero",
+    "demo-pintor":      "/business/demo-pintor",
+    "demo-salon":       "/business/demo-salon",
+    "demo-farmacia":    "/business/demo-farmacia",
+    "demo-taller":      "/business/demo-taller",
     "demo-veterinaria": "/business/demo-veterinaria",
-    "demo-papeleria": "/business/demo-papeleria",
-    "demo-muebles": "/business/demo-muebles",
-    "demo-artesanias": "/business/demo-artesanias",
-    "demo-deportes": "/business/demo-deportes",
+    "demo-papeleria":   "/business/demo-papeleria",
+    "demo-muebles":     "/business/demo-muebles",
+    "demo-artesanias":  "/business/demo-artesanias",
+    "demo-deportes":    "/business/demo-deportes",
+    "demo-optica":      "/business/demo-optica",
+    "demo-floristeria": "/business/demo-floristeria",
+    "demo-relojeria":   "/business/demo-relojeria",
+    "demo-bicicletas":  "/business/demo-bicicletas",
+    "demo-jugueteria":  "/business/demo-jugueteria",
   };
   const href = demoSlugs[business.id] ?? `/business/${business.id}`;
 

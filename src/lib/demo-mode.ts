@@ -167,6 +167,34 @@ export const DEMO_SELLER_NOTIFICATIONS = [
   },
 ];
 
+// ── Datos de checkout demo ──────────────────────────────────────────────────
+
+export const DEMO_CHECKOUT_BUSINESS = {
+  name: "Ferretería Acámbaro",
+  address: "Calle Juárez 45, Centro, Acámbaro, Gto.",
+  hours: "Lun-Sab 9:00 - 19:00",
+  phone: "4011234567",
+  prepTime: "15-20 min",
+  deliveryCost: 35,
+  minOrder: 150,
+};
+
+export const DEMO_MEETING_POINTS = [
+  { id: "plaza", name: "Plaza Principal", address: "Jardín Hidalgo, Centro", distance: "0.3 km", time: "5 min", emoji: "🏛️" },
+  { id: "jardin", name: "Jardín Central", address: "Av. Obregón s/n, Centro", distance: "0.5 km", time: "7 min", emoji: "🌳" },
+  { id: "terminal", name: "Terminal de Autobuses", address: "Blvd. Lázaro Cárdenas 12", distance: "1.2 km", time: "15 min", emoji: "🚌" },
+  { id: "walmart", name: "Walmart", address: "Carretera a Morelia km 2", distance: "2.1 km", time: "20 min", emoji: "🛒" },
+  { id: "soriana", name: "Soriana", address: "Av. López Mateos 100", distance: "1.8 km", time: "18 min", emoji: "🏪" },
+];
+
+export const DEMO_BANK_DETAILS = {
+  bank: "BBVA",
+  clabe: "012340001234567890",
+  account: "1234 5678",
+  holder: "Ferretería Acámbaro S.A.",
+  reference: "ACAM-",
+};
+
 // ── Helpers de cookie (client-side) ────────────────────────────────────────
 
 export function getDemoMode(): DemoRole | null {

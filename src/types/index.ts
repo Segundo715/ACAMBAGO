@@ -82,8 +82,9 @@ export interface Review {
 }
 
 export type OrderStatus = "pendiente" | "en_camino" | "entregado" | "cancelado";
+export type PaymentStatus = "pendiente" | "pagado" | "fallido";
 export type DeliveryMethod = "pickup" | "meeting" | "home";
-export type PaymentMethod = "cash" | "card" | "transfer" | "cod";
+export type PaymentMethod = "cash" | "card" | "transfer" | "cod" | "mercadopago";
 
 export interface OrderItem {
   id: string;
@@ -108,6 +109,9 @@ export interface Order {
   subtotal: number;
   shipping_cost: number;
   total: number;
+  payment_status: PaymentStatus;
+  mp_preference_id?: string;
+  mp_payment_id?: string;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];

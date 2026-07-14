@@ -19,6 +19,7 @@
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.400.0",
+    "mercadopago": "^3.2.0",
     "nanoid": "^5.0.7",
     "next": "^16.2.9",
     "qrcode.react": "^3.1.0",

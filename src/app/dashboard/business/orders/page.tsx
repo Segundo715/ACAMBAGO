@@ -28,6 +28,7 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   card: "Tarjeta (no procesada, verificar en persona)",
   transfer: "Transferencia bancaria",
   cod: "Contra entrega",
+  mercadopago: "Mercado Pago",
 };
 
 const DEMO_ORDERS: OrderRow[] = [

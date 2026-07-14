@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import {
   ArrowLeft, ChevronRight, MapPin, Clock, Package, CreditCard,
   Banknote, Truck, Store, CheckCircle2, Plus, Minus, Trash2,
-  MessageSquare, Star, Phone, Copy, AlertCircle,
+  MessageSquare, Star, Phone, Copy, AlertCircle, Wallet,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCart } from "@/lib/cart-context";
@@ -21,6 +21,7 @@ import {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+const MERCADOPAGO_ENABLED = !!process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -480,6 +481,7 @@ function Step3({
     method === "cash" ||
     method === "cod" ||
     method === "transfer" ||
+    method === "mercadopago" ||
     (method === "card" && card.name && card.number.length >= 16 && card.expiry && card.cvv.length >= 3);
 
   return (
@@ -489,6 +491,7 @@ function Step3({
         { id: "cash", icon: Banknote, label: "Efectivo", sub: "Pago al recibir" },
         { id: "card", icon: CreditCard, label: "Tarjeta", sub: "Crédito o débito (demo)" },
         ...(transferAvailable ? [{ id: "transfer", icon: Star, label: "Transferencia", sub: "SPEI / CLABE" }] : []),
+        ...(MERCADOPAGO_ENABLED ? [{ id: "mercadopago", icon: Wallet, label: "Mercado Pago", sub: "Tarjeta, OXXO, SPEI" }] : []),
         { id: "cod", icon: Package, label: "Contra entrega", sub: "Pagas al recibir" },
       ].map(({ id, icon: Icon, label, sub }) => (
         <button
@@ -678,6 +681,7 @@ function Step4({
     payment === "cash" ? "Efectivo" :
     payment === "card" ? "Tarjeta de crédito/débito" :
     payment === "transfer" ? "Transferencia bancaria" :
+    payment === "mercadopago" ? "Mercado Pago" :
     "Pago contra entrega";
 
   const etaLabel = IS_DEMO
@@ -755,7 +759,9 @@ function Step4({
         className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-base shadow-xl shadow-brand-500/30 active:scale-[0.98]"
       >
         {confirming ? (
-          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Confirmando...</>
+          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {payment === "mercadopago" ? "Redirigiendo a Mercado Pago..." : "Confirmando..."}</>
+        ) : payment === "mercadopago" ? (
+          <>Ir a pagar con Mercado Pago <CheckCircle2 className="w-5 h-5" /></>
         ) : (
           <>Confirmar Pedido <CheckCircle2 className="w-5 h-5" /></>
         )}
@@ -764,7 +770,9 @@ function Step4({
       <p className="text-center text-xs text-slate-400 dark:text-gray-500">
         {IS_DEMO
           ? "Al confirmar aceptas los términos de la tienda. Modo Demo: ningún cargo real."
-          : "Al confirmar, tu pedido se enviará a la tienda. Si pagas con tarjeta, todavía no se procesa ningún cargo real (no hay pasarela de pago conectada)."}
+          : payment === "mercadopago"
+          ? "Al confirmar, tu pedido se guarda y te llevamos a Mercado Pago para completar el cobro real."
+          : "Al confirmar, tu pedido se enviará a la tienda. Si pagas con tarjeta aquí mismo, todavía no se procesa ningún cargo real (no hay pasarela de pago conectada para ese método)."}
       </p>
     </div>
   );
@@ -905,6 +913,12 @@ export default function CheckoutPage() {
       byBusiness.set(item.business_id, list);
     }
 
+    if (payment === "mercadopago" && byBusiness.size > 1) {
+      toast.error("Con Mercado Pago solo puedes pagar productos de una tienda a la vez. Haz un pedido por separado para cada una.");
+      setConfirming(false);
+      return;
+    }
+
     let firstOrderId: string | null = null;
 
     for (const [businessId, businessItems] of byBusiness) {
@@ -939,6 +953,23 @@ export default function CheckoutPage() {
       }
 
       if (!firstOrderId) firstOrderId = newOrderId as string;
+    }
+
+    if (payment === "mercadopago" && firstOrderId) {
+      const res = await fetch("/api/mercadopago/create-preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: firstOrderId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.init_point) {
+        toast.error("No se pudo iniciar el pago con Mercado Pago. Tu pedido quedó guardado, contacta a la tienda.");
+        setConfirming(false);
+        return;
+      }
+      clearCart();
+      window.location.href = data.init_point;
+      return;
     }
 
     setOrderId(firstOrderId ?? "");

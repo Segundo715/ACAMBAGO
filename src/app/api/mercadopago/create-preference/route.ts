@@ -10,11 +10,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    if (!accessToken) {
-      return NextResponse.json({ error: "Mercado Pago no está configurado" }, { status: 503 });
-    }
-
     const { orderId } = await request.json();
     if (!orderId) {
       return NextResponse.json({ error: "Falta orderId" }, { status: 400 });
@@ -30,6 +25,20 @@ export async function POST(request: Request) {
 
     if (error || !order) {
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+    }
+
+    // El cobro se hace con la cuenta de Mercado Pago del negocio dueño del
+    // pedido, no con una cuenta general de la plataforma, para que el dinero
+    // le llegue directo a esa tienda.
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("mp_access_token")
+      .eq("id", order.business_id)
+      .single();
+
+    const accessToken = business?.mp_access_token;
+    if (!accessToken) {
+      return NextResponse.json({ error: "Esta tienda no tiene Mercado Pago configurado" }, { status: 503 });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -57,7 +66,7 @@ export async function POST(request: Request) {
           failure: `${appUrl}/checkout/tracking?order=${order.id}`,
         },
         auto_return: "approved",
-        notification_url: `${appUrl}/api/mercadopago/webhook`,
+        notification_url: `${appUrl}/api/mercadopago/webhook?business_id=${order.business_id}`,
       },
     });
 

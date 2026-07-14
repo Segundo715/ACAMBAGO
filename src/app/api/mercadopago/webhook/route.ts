@@ -8,15 +8,27 @@ import { MercadoPagoConfig, Payment } from "mercadopago";
 // Token, nunca se confía en los datos del body tal cual llegan.
 export async function POST(request: Request) {
   try {
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-    if (!accessToken) {
-      return NextResponse.json({ error: "Mercado Pago no está configurado" }, { status: 503 });
+    const businessId = new URL(request.url).searchParams.get("business_id");
+    if (!businessId) {
+      return NextResponse.json({ error: "Falta business_id" }, { status: 400 });
     }
 
     const body = await request.json();
     const paymentId = body?.data?.id;
     if (!paymentId || body?.type !== "payment") {
       return NextResponse.json({ ok: true });
+    }
+
+    const supabase = await createClient();
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("mp_access_token")
+      .eq("id", businessId)
+      .single();
+
+    const accessToken = business?.mp_access_token;
+    if (!accessToken) {
+      return NextResponse.json({ error: "Esta tienda no tiene Mercado Pago configurado" }, { status: 503 });
     }
 
     const client = new MercadoPagoConfig({ accessToken });
@@ -32,7 +44,6 @@ export async function POST(request: Request) {
       payment.status === "rejected" ? "fallido" :
       "pendiente";
 
-    const supabase = await createClient();
     await supabase
       .from("orders")
       .update({ payment_status: paymentStatus, mp_payment_id: String(payment.id) })

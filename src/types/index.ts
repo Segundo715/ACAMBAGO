@@ -26,6 +26,8 @@ export interface Business {
   bank_name?: string;
   bank_holder?: string;
   bank_clabe?: string;
+  mp_public_key?: string;
+  mp_access_token?: string;
   rating_avg: number;
   rating_count: number;
   is_approved: boolean;

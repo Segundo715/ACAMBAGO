@@ -82,6 +82,8 @@ export default function SettingsPage() {
       bank_name: business.bank_name || null,
       bank_holder: business.bank_holder || null,
       bank_clabe: business.bank_clabe || null,
+      mp_public_key: business.mp_public_key || null,
+      mp_access_token: business.mp_access_token || null,
     };
 
     if (isNew) {
@@ -228,6 +230,24 @@ export default function SettingsPage() {
           <div>
             <label className="label">CLABE interbancaria</label>
             <input value={business.bank_clabe ?? ""} onChange={(e) => update("bank_clabe", e.target.value)} className="input" placeholder="18 dígitos" maxLength={18} />
+          </div>
+        </div>
+
+        <div className="card p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Mercado Pago (opcional)</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Si las llenas, tus clientes podrán pagarte con tarjeta, OXXO o SPEI directo en el checkout, y el dinero cae en tu propia cuenta de Mercado Pago, no en la de AcambaGo. Consigue tus llaves en{" "}
+            <a href="https://www.mercadopago.com.mx/developers/panel/credentials" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline">
+              mercadopago.com.mx/developers/panel/credentials
+            </a>.
+          </p>
+          <div>
+            <label className="label">Public Key</label>
+            <input value={business.mp_public_key ?? ""} onChange={(e) => update("mp_public_key", e.target.value)} className="input" placeholder="APP_USR-..." />
+          </div>
+          <div>
+            <label className="label">Access Token</label>
+            <input type="password" value={business.mp_access_token ?? ""} onChange={(e) => update("mp_access_token", e.target.value)} className="input" placeholder="APP_USR-..." />
           </div>
         </div>
 

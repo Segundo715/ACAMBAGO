@@ -21,7 +21,6 @@ import {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
-const MERCADOPAGO_ENABLED = !!process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -56,6 +55,7 @@ interface PickupBusiness {
   bank_name: string | null;
   bank_holder: string | null;
   bank_clabe: string | null;
+  mp_public_key: string | null;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -470,6 +470,7 @@ function Step3({
   const [copied, setCopied] = useState<string | null>(null);
   const businessesWithBank = pickupBusinesses.filter((b) => b.bank_clabe);
   const transferAvailable = IS_DEMO || businessesWithBank.length > 0;
+  const mercadoPagoAvailable = !IS_DEMO && pickupBusinesses.length > 0 && pickupBusinesses.every((b) => b.mp_public_key);
 
   const copyClabe = (clabe: string) => {
     navigator.clipboard.writeText(clabe).catch(() => {});
@@ -491,7 +492,7 @@ function Step3({
         { id: "cash", icon: Banknote, label: "Efectivo", sub: "Pago al recibir" },
         { id: "card", icon: CreditCard, label: "Tarjeta", sub: "Crédito o débito (demo)" },
         ...(transferAvailable ? [{ id: "transfer", icon: Star, label: "Transferencia", sub: "SPEI / CLABE" }] : []),
-        ...(MERCADOPAGO_ENABLED ? [{ id: "mercadopago", icon: Wallet, label: "Mercado Pago", sub: "Tarjeta, OXXO, SPEI" }] : []),
+        ...(mercadoPagoAvailable ? [{ id: "mercadopago", icon: Wallet, label: "Mercado Pago", sub: "Tarjeta, OXXO, SPEI" }] : []),
         { id: "cod", icon: Package, label: "Contra entrega", sub: "Pagas al recibir" },
       ].map(({ id, icon: Icon, label, sub }) => (
         <button
@@ -875,7 +876,7 @@ export default function CheckoutPage() {
     const supabase = createClient();
     supabase
       .from("businesses")
-      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe")
+      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key")
       .in("id", ids)
       .then(({ data }) => setPickupBusinesses((data ?? []) as PickupBusiness[]));
   }, [items]);

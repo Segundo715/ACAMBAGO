@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ShoppingBag, Phone, Check, Truck, Clock, X, Search } from "lucide-react";
+import { ShoppingBag, Phone, Check, Truck, Clock, X, Search, AlertTriangle } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Order, OrderStatus } from "@/types";
+import { Order, OrderStatus, PaymentMethod } from "@/types";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -20,16 +20,24 @@ interface OrderRow {
   status: OrderStatus;
   date: string;
   address: string;
+  payment_method: PaymentMethod;
 }
 
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta (no procesada, verificar en persona)",
+  transfer: "Transferencia bancaria",
+  cod: "Contra entrega",
+};
+
 const DEMO_ORDERS: OrderRow[] = [
-  { id: "ORD-001", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro" },
-  { id: "ORD-002", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas" },
-  { id: "ORD-003", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88" },
-  { id: "ORD-004", customer: "José López", phone: "4151234570", items: ["Pintura Vinílica 4L Blanco"], total: 320, status: "cancelado", date: "25 Jun 2026 · 09:45", address: "Calle Juárez 3" },
-  { id: "ORD-005", customer: "Luisa Torres", phone: "4151234571", items: ["Taladro Percutor 750W", "Kit Fumigador Pro"], total: 1169, status: "pendiente", date: "25 Jun 2026 · 08:20", address: "Av. 5 de Febrero 201" },
-  { id: "ORD-006", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7" },
-  { id: "ORD-007", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55" },
+  { id: "ORD-001", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro", payment_method: "cash" },
+  { id: "ORD-002", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas", payment_method: "transfer" },
+  { id: "ORD-003", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88", payment_method: "cod" },
+  { id: "ORD-004", customer: "José López", phone: "4151234570", items: ["Pintura Vinílica 4L Blanco"], total: 320, status: "cancelado", date: "25 Jun 2026 · 09:45", address: "Calle Juárez 3", payment_method: "cash" },
+  { id: "ORD-005", customer: "Luisa Torres", phone: "4151234571", items: ["Taladro Percutor 750W", "Kit Fumigador Pro"], total: 1169, status: "pendiente", date: "25 Jun 2026 · 08:20", address: "Av. 5 de Febrero 201", payment_method: "transfer" },
+  { id: "ORD-006", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7", payment_method: "cash" },
+  { id: "ORD-007", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55", payment_method: "card" },
 ];
 
 const STATUS_CONFIG = {
@@ -59,6 +67,7 @@ function orderToRow(o: Order): OrderRow {
     status: o.status,
     date: new Date(o.created_at).toLocaleString("es-MX", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
     address: o.delivery_method === "home" ? (o.address?.street ?? "") : o.delivery_method === "meeting" ? "Punto de reunión" : "Recoger en tienda",
+    payment_method: o.payment_method,
   };
 }
 
@@ -265,7 +274,7 @@ export default function OrdersPage() {
                 {/* Expanded detail */}
                 {isOpen && (
                   <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-white/10 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
                       <div>
                         <p className="text-xs text-slate-400 mb-0.5">Fecha</p>
                         <p className="text-slate-700 dark:text-slate-300">{order.date}</p>
@@ -273,6 +282,10 @@ export default function OrdersPage() {
                       <div>
                         <p className="text-xs text-slate-400 mb-0.5">Dirección</p>
                         <p className="text-slate-700 dark:text-slate-300">{order.address}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5">Pago</p>
+                        <p className="text-slate-700 dark:text-slate-300">{PAYMENT_LABELS[order.payment_method]}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-400 mb-0.5">Productos</p>
@@ -283,6 +296,14 @@ export default function OrdersPage() {
                         </ul>
                       </div>
                     </div>
+                    {order.payment_method === "transfer" && order.status === "pendiente" && (
+                      <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Este pedido se paga por transferencia. Verifica en tu cuenta bancaria que el depósito ya llegó antes de marcarlo como enviado.
+                        </p>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap pt-1">
                       {order.phone && (
                         <a

@@ -28,6 +28,8 @@ export interface Business {
   bank_clabe?: string;
   mp_public_key?: string;
   mp_access_token?: string;
+  stripe_account_id?: string;
+  stripe_charges_enabled?: boolean;
   rating_avg: number;
   rating_count: number;
   is_approved: boolean;
@@ -86,7 +88,7 @@ export interface Review {
 export type OrderStatus = "pendiente" | "en_camino" | "entregado" | "cancelado";
 export type PaymentStatus = "pendiente" | "pagado" | "fallido";
 export type DeliveryMethod = "pickup" | "meeting" | "home";
-export type PaymentMethod = "cash" | "card" | "transfer" | "cod" | "mercadopago";
+export type PaymentMethod = "cash" | "card" | "transfer" | "cod" | "mercadopago" | "stripe";
 
 export interface OrderItem {
   id: string;
@@ -114,6 +116,7 @@ export interface Order {
   payment_status: PaymentStatus;
   mp_preference_id?: string;
   mp_payment_id?: string;
+  stripe_payment_intent_id?: string;
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];

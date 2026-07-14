@@ -56,6 +56,7 @@ interface PickupBusiness {
   bank_holder: string | null;
   bank_clabe: string | null;
   mp_public_key: string | null;
+  stripe_charges_enabled: boolean;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -471,6 +472,7 @@ function Step3({
   const businessesWithBank = pickupBusinesses.filter((b) => b.bank_clabe);
   const transferAvailable = IS_DEMO || businessesWithBank.length > 0;
   const mercadoPagoAvailable = !IS_DEMO && pickupBusinesses.length > 0 && pickupBusinesses.every((b) => b.mp_public_key);
+  const stripeAvailable = !IS_DEMO && pickupBusinesses.length > 0 && pickupBusinesses.every((b) => b.stripe_charges_enabled);
 
   const copyClabe = (clabe: string) => {
     navigator.clipboard.writeText(clabe).catch(() => {});
@@ -483,6 +485,7 @@ function Step3({
     method === "cod" ||
     method === "transfer" ||
     method === "mercadopago" ||
+    method === "stripe" ||
     (method === "card" && card.name && card.number.length >= 16 && card.expiry && card.cvv.length >= 3);
 
   return (
@@ -490,9 +493,10 @@ function Step3({
       {/* Payment method cards */}
       {[
         { id: "cash", icon: Banknote, label: "Efectivo", sub: "Pago al recibir" },
-        { id: "card", icon: CreditCard, label: "Tarjeta", sub: "Crédito o débito (demo)" },
+        ...(IS_DEMO ? [{ id: "card", icon: CreditCard, label: "Tarjeta", sub: "Crédito o débito (demo)" }] : []),
         ...(transferAvailable ? [{ id: "transfer", icon: Star, label: "Transferencia", sub: "SPEI / CLABE" }] : []),
         ...(mercadoPagoAvailable ? [{ id: "mercadopago", icon: Wallet, label: "Mercado Pago", sub: "Tarjeta, OXXO, SPEI" }] : []),
+        ...(stripeAvailable ? [{ id: "stripe", icon: CreditCard, label: "Tarjeta", sub: "Pago seguro con Stripe" }] : []),
         { id: "cod", icon: Package, label: "Contra entrega", sub: "Pagas al recibir" },
       ].map(({ id, icon: Icon, label, sub }) => (
         <button
@@ -537,8 +541,8 @@ function Step3({
         </div>
       )}
 
-      {/* Card form */}
-      {method === "card" && (
+      {/* Card form (demo only) */}
+      {method === "card" && IS_DEMO && (
         <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
           <div className="flex items-center gap-2 p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20">
             <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -683,6 +687,7 @@ function Step4({
     payment === "card" ? "Tarjeta de crédito/débito" :
     payment === "transfer" ? "Transferencia bancaria" :
     payment === "mercadopago" ? "Mercado Pago" :
+    payment === "stripe" ? "Tarjeta (Stripe)" :
     "Pago contra entrega";
 
   const etaLabel = IS_DEMO
@@ -760,9 +765,11 @@ function Step4({
         className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-base shadow-xl shadow-brand-500/30 active:scale-[0.98]"
       >
         {confirming ? (
-          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {payment === "mercadopago" ? "Redirigiendo a Mercado Pago..." : "Confirmando..."}</>
+          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {payment === "mercadopago" ? "Redirigiendo a Mercado Pago..." : payment === "stripe" ? "Redirigiendo a Stripe..." : "Confirmando..."}</>
         ) : payment === "mercadopago" ? (
           <>Ir a pagar con Mercado Pago <CheckCircle2 className="w-5 h-5" /></>
+        ) : payment === "stripe" ? (
+          <>Ir a pagar con tarjeta <CheckCircle2 className="w-5 h-5" /></>
         ) : (
           <>Confirmar Pedido <CheckCircle2 className="w-5 h-5" /></>
         )}
@@ -773,7 +780,9 @@ function Step4({
           ? "Al confirmar aceptas los términos de la tienda. Modo Demo: ningún cargo real."
           : payment === "mercadopago"
           ? "Al confirmar, tu pedido se guarda y te llevamos a Mercado Pago para completar el cobro real."
-          : "Al confirmar, tu pedido se enviará a la tienda. Si pagas con tarjeta aquí mismo, todavía no se procesa ningún cargo real (no hay pasarela de pago conectada para ese método)."}
+          : payment === "stripe"
+          ? "Al confirmar, tu pedido se guarda y te llevamos a Stripe para completar el cobro real con tarjeta."
+          : "Al confirmar, tu pedido se enviará a la tienda."}
       </p>
     </div>
   );
@@ -876,7 +885,7 @@ export default function CheckoutPage() {
     const supabase = createClient();
     supabase
       .from("businesses")
-      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key")
+      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key, stripe_charges_enabled")
       .in("id", ids)
       .then(({ data }) => setPickupBusinesses((data ?? []) as PickupBusiness[]));
   }, [items]);
@@ -914,8 +923,8 @@ export default function CheckoutPage() {
       byBusiness.set(item.business_id, list);
     }
 
-    if (payment === "mercadopago" && byBusiness.size > 1) {
-      toast.error("Con Mercado Pago solo puedes pagar productos de una tienda a la vez. Haz un pedido por separado para cada una.");
+    if ((payment === "mercadopago" || payment === "stripe") && byBusiness.size > 1) {
+      toast.error("Con Mercado Pago o Stripe solo puedes pagar productos de una tienda a la vez. Haz un pedido por separado para cada una.");
       setConfirming(false);
       return;
     }
@@ -970,6 +979,23 @@ export default function CheckoutPage() {
       }
       clearCart();
       window.location.href = data.init_point;
+      return;
+    }
+
+    if (payment === "stripe" && firstOrderId) {
+      const res = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: firstOrderId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        toast.error("No se pudo iniciar el pago con Stripe. Tu pedido quedó guardado, contacta a la tienda.");
+        setConfirming(false);
+        return;
+      }
+      clearCart();
+      window.location.href = data.url;
       return;
     }
 

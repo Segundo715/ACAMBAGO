@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
-import { Settings, MapPin, Save, Upload, LocateFixed } from "lucide-react";
+import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const { user, isLoaded } = useUser();
+  const searchParams = useSearchParams();
   const [business, setBusiness] = useState<Partial<Business>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [locating, setLocating] = useState(false);
+  const [connectingStripe, setConnectingStripe] = useState(false);
   const supabase = createClient();
 
   const handleUseLocation = () => {
@@ -51,6 +54,30 @@ export default function SettingsPage() {
     };
     load();
   }, [isLoaded, user?.id]);
+
+  useEffect(() => {
+    if (!user || !searchParams.get("stripe_return")) return;
+    fetch("/api/stripe/connect").then((res) => res.json()).then((data) => {
+      if (data.chargesEnabled) {
+        toast.success("¡Stripe conectado! Ya puedes recibir pagos con tarjeta.");
+        setBusiness((prev) => ({ ...prev, stripe_charges_enabled: true }));
+      } else if (data.connected) {
+        toast.error("Stripe aún no terminó de verificar tu cuenta. Completa el proceso para poder recibir pagos.");
+      }
+    });
+  }, [user, searchParams]);
+
+  const handleConnectStripe = async () => {
+    setConnectingStripe(true);
+    const res = await fetch("/api/stripe/connect", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok || !data.url) {
+      toast.error("No se pudo iniciar la conexión con Stripe.");
+      setConnectingStripe(false);
+      return;
+    }
+    window.location.href = data.url;
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,11 +278,46 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        <div className="card p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-brand-600" />
+            Stripe (opcional)
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Conecta tu propia cuenta de Stripe para recibir pagos con tarjeta directo en el checkout. El dinero cae en tu cuenta, no en la de AcambaGo. Stripe te pedirá datos de identidad y de tu cuenta bancaria (proceso de Stripe, no de AcambaGo).
+          </p>
+          {isNew ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400">Primero registra tu negocio para poder conectar Stripe.</p>
+          ) : business.stripe_charges_enabled ? (
+            <div className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <span className="text-xs text-green-700 dark:text-green-300">Stripe conectado y listo para recibir pagos.</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleConnectStripe}
+              disabled={connectingStripe}
+              className="btn-secondary w-full flex items-center justify-center gap-2 text-sm"
+            >
+              {connectingStripe ? "Conectando..." : business.stripe_account_id ? "Continuar verificación de Stripe" : "Conectar con Stripe"}
+            </button>
+          )}
+        </div>
+
         <button type="submit" disabled={saving} className="btn-primary w-full flex items-center justify-center gap-2">
           <Save className="w-4 h-4" />
           {saving ? "Guardando..." : isNew ? "Registrar negocio" : "Guardar cambios"}
         </button>
       </form>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
   );
 }

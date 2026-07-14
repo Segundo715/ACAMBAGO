@@ -49,6 +49,8 @@ export default async function ProductPage({
   const extra = DEMO_PRODUCT_EXTRAS[id];
   const images = extra?.images?.length
     ? extra.images
+    : product.image_urls?.length
+    ? product.image_urls
     : product.image_url
     ? [product.image_url]
     : [FALLBACK_IMAGE];

@@ -5,7 +5,7 @@ import {
   DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
   DEMO_PRODUCTS, DEMO_PRODUCTS_ROPA, DEMO_PRODUCTS_ELECTRONICA,
   DEMO_PRODUCTS_ZAPATERIA, DEMO_PRODUCTS_JOYERIA, DEMO_PRODUCTS_ARTESANIAS, DEMO_PRODUCTS_DEPORTES,
-  DEMO_PRODUCTS_REPOSTERIA, DEMO_PRODUCTS_COMPUTACION, DEMO_PRODUCTS_FLORISTERIA, DEMO_PRODUCTS_PANADERIA,
+  DEMO_PRODUCTS_HERBOLARIA, DEMO_PRODUCTS_COMPUTACION, DEMO_PRODUCTS_FLORISTERIA, DEMO_PRODUCTS_ABARROTES,
 } from "@/lib/demo-data";
 
 const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
@@ -37,15 +37,18 @@ const FEATURED = [
   { ...DEMO_PRODUCTS[0],        business_name: "Ferretería Acámbaro",     business_category: "Ferretería",   image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80" },
   { ...DEMO_PRODUCTS_ROPA[0],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80" },
   { ...DEMO_PRODUCTS_ELECTRONICA[0], business_name: "TechStore Acámbaro", business_category: "Electrónica", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ROPA[1],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&q=80" },
   { ...DEMO_PRODUCTS_ZAPATERIA[0], business_name: "Zapatería El Paso",    business_category: "Zapatería",   image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80" },
   { ...DEMO_PRODUCTS_JOYERIA[0],  business_name: "Joyería Acámbaro Gold", business_category: "Joyería",     image: "https://images.unsplash.com/photo-1535632787350-4e68ef0ac584?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ROPA[2],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80" },
   { ...DEMO_PRODUCTS_ELECTRONICA[3], business_name: "TechStore Acámbaro", business_category: "Electrónica", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80" },
-  { ...DEMO_PRODUCTS_ARTESANIAS[0], business_name: "Artesanías de Acámbaro", business_category: "Artesanías", image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ARTESANIAS[0], business_name: "Artesanías de Acámbaro", business_category: "Artesanías", image: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=400&q=80" },
   { ...DEMO_PRODUCTS_DEPORTES[0],     business_name: "Deportes Acámbaro",       business_category: "Deportes",    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&q=80" },
-  { ...DEMO_PRODUCTS_REPOSTERIA[0],   business_name: "Repostería Dulce Vida",   business_category: "Otro",        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ROPA[3],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=400&q=80" },
+  { ...DEMO_PRODUCTS_HERBOLARIA[0],   business_name: "Herbolaria y Naturista Verde", business_category: "Farmacia", image: "https://images.unsplash.com/photo-1563822249366-3efb23b8e0c9?w=400&q=80" },
   { ...DEMO_PRODUCTS_COMPUTACION[0],  business_name: "Computación Pro",         business_category: "Electrónica", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80" },
-  { ...DEMO_PRODUCTS_FLORISTERIA[0],  business_name: "Floristería Las Margaritas", business_category: "Otro",     image: "https://images.unsplash.com/photo-1490750967868-88df5691cc0e?w=400&q=80" },
-  { ...DEMO_PRODUCTS_PANADERIA[0],    business_name: "Panadería El Trigal",     business_category: "Otro",        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80" },
+  { ...DEMO_PRODUCTS_FLORISTERIA[0],  business_name: "Floristería Las Margaritas", business_category: "Otro",     image: "https://images.unsplash.com/photo-1512056495345-913a0c261dc8?w=400&q=80" },
+  { ...DEMO_PRODUCTS_ABARROTES[0],    business_name: "Abarrotes La Esquina",    business_category: "Abarrotes",   image: "https://images.unsplash.com/photo-1699377179823-d5975d237b4e?w=400&q=80" },
 ];
 
 const FEATURED_CATEGORIES = [
@@ -53,7 +56,7 @@ const FEATURED_CATEGORIES = [
   { name: "Electrónica",    emoji: "📱", image: "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80", desc: "Gadgets y accesorios" },
   { name: "Joyería",        emoji: "💍", image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80", desc: "Plata, oro y fantasía" },
   { name: "Zapatería",      emoji: "👟", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", desc: "Calzado para todos" },
-  { name: "Artesanías",     emoji: "🏺", image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80", desc: "Hecho a mano en Acámbaro" },
+  { name: "Artesanías",     emoji: "🏺", image: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=400&q=80", desc: "Hecho a mano en Acámbaro" },
   { name: "Deportes",       emoji: "⚽", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80", desc: "Equipo y ropa deportiva" },
 ];
 

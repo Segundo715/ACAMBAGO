@@ -1,21 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { ShoppingBag, Phone, Check, Truck, Clock, X, Search } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { Order, OrderStatus } from "@/types";
+import toast from "react-hot-toast";
 
-interface Order {
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+
+interface OrderRow {
   id: string;
   customer: string;
   phone: string;
   items: string[];
   total: number;
-  status: "pendiente" | "en_camino" | "entregado" | "cancelado";
+  status: OrderStatus;
   date: string;
   address: string;
 }
 
-const DEMO_ORDERS: Order[] = [
+const DEMO_ORDERS: OrderRow[] = [
   { id: "ORD-001", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro" },
   { id: "ORD-002", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas" },
   { id: "ORD-003", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88" },
@@ -42,12 +49,108 @@ const TABS = [
 
 type Tab = typeof TABS[number]["key"];
 
+function orderToRow(o: Order): OrderRow {
+  return {
+    id: o.id,
+    customer: o.customer_name,
+    phone: (o.customer_phone ?? o.address?.phone ?? "").replace(/\D/g, ""),
+    items: (o.order_items ?? []).map((it) => `${it.name} x${it.quantity}`),
+    total: o.total,
+    status: o.status,
+    date: new Date(o.created_at).toLocaleString("es-MX", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+    address: o.delivery_method === "home" ? (o.address?.street ?? "") : o.delivery_method === "meeting" ? "Punto de reunión" : "Recoger en tienda",
+  };
+}
+
+// Beep corto generado con Web Audio API — no depende de ningún archivo de audio.
+function playNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioContextClass();
+    [0, 0.15].forEach((delay) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.13);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.13);
+    });
+  } catch {
+    // Si el navegador bloquea audio sin interacción previa, se ignora en silencio.
+  }
+}
+
 export default function OrdersPage() {
+  const { user, isLoaded } = useUser();
   const [tab, setTab] = useState<Tab>("todos");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const businessIdRef = useRef<string | null>(null);
+  const supabase = createClient();
 
-  const filtered = DEMO_ORDERS.filter((o) => {
+  useEffect(() => {
+    const load = async () => {
+      if (IS_DEMO) {
+        setOrders(DEMO_ORDERS);
+        setLoaded(true);
+        return;
+      }
+      if (!isLoaded || !user) return;
+
+      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      if (!biz) { setLoaded(true); return; }
+      businessIdRef.current = biz.id;
+
+      const { data } = await supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("business_id", biz.id)
+        .order("created_at", { ascending: false });
+
+      setOrders(((data ?? []) as Order[]).map(orderToRow));
+      setLoaded(true);
+    };
+    load();
+  }, [isLoaded, user?.id]);
+
+  // Notificación en vivo: cuando entra un pedido nuevo, suena y aparece arriba de la lista.
+  useEffect(() => {
+    if (IS_DEMO || !businessIdRef.current) return;
+    const bizId = businessIdRef.current;
+
+    const channel = supabase
+      .channel(`orders-${bizId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders", filter: `business_id=eq.${bizId}` },
+        async (payload) => {
+          const { data: items } = await supabase.from("order_items").select("*").eq("order_id", payload.new.id);
+          const fullOrder = { ...(payload.new as Order), order_items: items ?? [] };
+          setOrders((prev) => [orderToRow(fullOrder), ...prev]);
+          playNotificationSound();
+          toast.success(`Pedido nuevo de ${fullOrder.customer_name} · ${formatPrice(fullOrder.total)}`, { duration: 6000, icon: "🔔" });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loaded]);
+
+  const updateStatus = async (id: string, status: OrderStatus) => {
+    if (IS_DEMO) { toast("Conecta Supabase para actualizar pedidos reales", { icon: "ℹ️" }); return; }
+    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    if (error) { toast.error("Error al actualizar el pedido"); return; }
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    toast.success("Pedido actualizado");
+  };
+
+  const filtered = orders.filter((o) => {
     const matchTab = tab === "todos" || o.status === tab;
     const matchSearch = o.customer.toLowerCase().includes(search.toLowerCase()) ||
       o.id.toLowerCase().includes(search.toLowerCase());
@@ -55,11 +158,11 @@ export default function OrdersPage() {
   });
 
   const counts = {
-    todos: DEMO_ORDERS.length,
-    pendiente: DEMO_ORDERS.filter((o) => o.status === "pendiente").length,
-    en_camino: DEMO_ORDERS.filter((o) => o.status === "en_camino").length,
-    entregado: DEMO_ORDERS.filter((o) => o.status === "entregado").length,
-    cancelado: DEMO_ORDERS.filter((o) => o.status === "cancelado").length,
+    todos: orders.length,
+    pendiente: orders.filter((o) => o.status === "pendiente").length,
+    en_camino: orders.filter((o) => o.status === "en_camino").length,
+    entregado: orders.filter((o) => o.status === "entregado").length,
+    cancelado: orders.filter((o) => o.status === "cancelado").length,
   };
 
   return (
@@ -73,6 +176,16 @@ export default function OrdersPage() {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gestiona los pedidos de tu tienda</p>
         </div>
       </div>
+
+      {IS_DEMO && (
+        <div className="card p-4 flex items-start gap-3 border-l-4 border-l-yellow-400 bg-yellow-50/50 dark:bg-yellow-500/5">
+          <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Modo demo activo</p>
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-0.5">Estos pedidos son de demostración. Conecta Supabase para ver y notificar pedidos reales.</p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-100 dark:bg-white/5 rounded-xl p-1 overflow-x-auto">
@@ -110,7 +223,9 @@ export default function OrdersPage() {
 
       {/* Orders list */}
       <div className="space-y-3">
-        {filtered.length === 0 ? (
+        {!loaded ? (
+          <div className="card p-10 text-center text-slate-400 dark:text-slate-500">Cargando pedidos...</div>
+        ) : filtered.length === 0 ? (
           <div className="card p-10 text-center">
             <ShoppingBag className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500 dark:text-slate-400">No se encontraron pedidos</p>
@@ -134,7 +249,7 @@ export default function OrdersPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-slate-900 dark:text-white text-sm">{order.customer}</p>
-                      <span className="text-xs text-slate-400">#{order.id}</span>
+                      <span className="text-xs text-slate-400">#{order.id.slice(0, 8)}</span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{order.items.join(", ")}</p>
                   </div>
@@ -169,21 +284,29 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap pt-1">
-                      <a
-                        href={`https://wa.me/52${order.phone}?text=Hola%20${encodeURIComponent(order.customer)}%2C%20te%20contactamos%20sobre%20tu%20pedido%20%23${order.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg text-xs font-medium hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
-                      >
-                        <Phone className="w-3.5 h-3.5" /> Contactar por WhatsApp
-                      </a>
+                      {order.phone && (
+                        <a
+                          href={`https://wa.me/52${order.phone}?text=Hola%20${encodeURIComponent(order.customer)}%2C%20te%20contactamos%20sobre%20tu%20pedido%20%23${order.id.slice(0, 8)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg text-xs font-medium hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5" /> Contactar por WhatsApp
+                        </a>
+                      )}
                       {order.status === "pendiente" && (
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors">
+                        <button
+                          onClick={() => updateStatus(order.id, "en_camino")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+                        >
                           <Truck className="w-3.5 h-3.5" /> Marcar como enviado
                         </button>
                       )}
                       {order.status === "en_camino" && (
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg text-xs font-medium hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors">
+                        <button
+                          onClick={() => updateStatus(order.id, "entregado")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg text-xs font-medium hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
+                        >
                           <Check className="w-3.5 h-3.5" /> Marcar como entregado
                         </button>
                       )}

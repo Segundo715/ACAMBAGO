@@ -23,6 +23,9 @@ export interface Business {
   whatsapp?: string;
   image_url?: string;
   banner_url?: string;
+  bank_name?: string;
+  bank_holder?: string;
+  bank_clabe?: string;
   rating_avg: number;
   rating_count: number;
   is_approved: boolean;
@@ -38,6 +41,7 @@ export interface Product {
   description?: string;
   price: number;
   image_url?: string;
+  image_urls?: string[];
   is_available: boolean;
   created_at: string;
   updated_at: string;
@@ -75,6 +79,38 @@ export interface Review {
   comment?: string;
   created_at: string;
   profiles?: Pick<Profile, "name" | "avatar_url">;
+}
+
+export type OrderStatus = "pendiente" | "en_camino" | "entregado" | "cancelado";
+export type DeliveryMethod = "pickup" | "meeting" | "home";
+export type PaymentMethod = "cash" | "card" | "transfer" | "cod";
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id?: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  business_id: string;
+  user_id: string;
+  customer_name: string;
+  customer_phone?: string;
+  status: OrderStatus;
+  delivery_method: DeliveryMethod;
+  payment_method: PaymentMethod;
+  address?: Record<string, string>;
+  note?: string;
+  subtotal: number;
+  shipping_cost: number;
+  total: number;
+  created_at: string;
+  updated_at: string;
+  order_items?: OrderItem[];
 }
 
 export interface QRPayload {

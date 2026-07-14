@@ -12,6 +12,13 @@ import { formatPrice } from "@/lib/utils";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+const MAX_IMAGES = 6;
+
+interface ImageSlot {
+  url?: string;   // ya subida a Storage
+  file?: File;    // pendiente de subir
+  preview: string;
+}
 
 export default function ProductsPage() {
   const { user, isLoaded } = useUser();
@@ -23,8 +30,7 @@ export default function ProductsPage() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<ImageSlot[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const supabase = createClient();
@@ -54,25 +60,32 @@ export default function ProductsPage() {
   const openNew = () => {
     if (IS_DEMO) { toast("Conecta Supabase para agregar productos reales", { icon: "ℹ️" }); return; }
     setEditing(null); setName(""); setDescription(""); setPrice("");
-    setImageFile(null); setImagePreview(null); setShowForm(true);
+    setImages([]); setShowForm(true);
   };
 
   const openEdit = (p: Product) => {
     if (IS_DEMO) { toast("Conecta Supabase para editar productos", { icon: "ℹ️" }); return; }
     setEditing(p); setName(p.name); setDescription(p.description ?? "");
-    setPrice(String(p.price)); setImageFile(null);
-    setImagePreview(p.image_url ?? null); setShowForm(true);
+    setPrice(String(p.price));
+    const existing = p.image_urls?.length ? p.image_urls : p.image_url ? [p.image_url] : [];
+    setImages(existing.map((url) => ({ url, preview: url })));
+    setShowForm(true);
   };
 
-  const handleImageChange = (file: File | null) => {
-    setImageFile(file);
-    if (file) {
+  const addFiles = (fileList: FileList | null) => {
+    if (!fileList) return;
+    const files = Array.from(fileList).slice(0, MAX_IMAGES - images.length);
+    files.forEach((file) => {
       const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.onloadend = () => {
+        setImages((prev) => [...prev, { file, preview: reader.result as string }]);
+      };
       reader.readAsDataURL(file);
-    } else {
-      setImagePreview(editing?.image_url ?? null);
-    }
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -83,33 +96,40 @@ export default function ProductsPage() {
     }
     setSaving(true);
 
-    let image_url = editing?.image_url;
-
-    if (imageFile) {
-      const ext = imageFile.name.split(".").pop();
-      const path = `${businessId}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, imageFile, { upsert: true });
-      if (!uploadErr) {
+    const finalUrls: string[] = [];
+    for (const img of images) {
+      if (img.url) {
+        finalUrls.push(img.url);
+        continue;
+      }
+      if (img.file) {
+        const ext = img.file.name.split(".").pop();
+        const path = `${businessId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("product-images").upload(path, img.file, { upsert: true });
+        if (uploadErr) {
+          toast.error(`Error al subir una imagen: ${uploadErr.message}`);
+          setSaving(false);
+          return;
+        }
         const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(path);
-        image_url = publicUrl;
-      } else {
-        toast.error(`Error al subir la imagen: ${uploadErr.message}`);
-        setSaving(false);
-        return;
+        finalUrls.push(publicUrl);
       }
     }
 
+    const image_url = finalUrls[0];
+    const image_urls = finalUrls;
+
     if (editing) {
-      const { error } = await supabase.from("products").update({ name, description, price: parseFloat(price), image_url }).eq("id", editing.id);
+      const { error } = await supabase.from("products").update({ name, description, price: parseFloat(price), image_url, image_urls }).eq("id", editing.id);
       if (error) {
         toast.error(`Error al actualizar: ${error.message}`);
       } else {
-        setProducts((prev) => prev.map((p) => p.id === editing.id ? { ...p, name, description, price: parseFloat(price), image_url } : p));
+        setProducts((prev) => prev.map((p) => p.id === editing.id ? { ...p, name, description, price: parseFloat(price), image_url, image_urls } : p));
         toast.success("Producto actualizado");
         setShowForm(false);
       }
     } else {
-      const { data, error } = await supabase.from("products").insert({ business_id: businessId, name, description, price: parseFloat(price), image_url }).select().single();
+      const { data, error } = await supabase.from("products").insert({ business_id: businessId, name, description, price: parseFloat(price), image_url, image_urls }).select().single();
       if (error) {
         toast.error(`Error al guardar: ${error.message}`);
       } else if (data) {
@@ -170,27 +190,32 @@ export default function ProductsPage() {
               </button>
             </div>
             <form onSubmit={handleSave} className="space-y-4">
-              {/* Image */}
+              {/* Images */}
               <div>
-                <label className="label">Foto del producto</label>
-                <div
-                  onClick={() => document.getElementById("product-image-input")?.click()}
-                  className="relative cursor-pointer border-2 border-dashed border-slate-200 dark:border-white/20 rounded-xl overflow-hidden hover:border-brand-400 dark:hover:border-brand-500 transition-colors"
-                >
-                  {imagePreview ? (
-                    <div className="relative h-44">
-                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <p className="text-white text-sm font-medium flex items-center gap-1.5">
-                          <Upload className="w-4 h-4" /> Cambiar foto
-                        </p>
-                      </div>
+                <label className="label">Fotos del producto ({images.length}/{MAX_IMAGES})</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((img, i) => (
+                    <div key={i} className="relative h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10">
+                      <Image src={img.preview} alt={`Foto ${i + 1}`} fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      {i === 0 && (
+                        <span className="absolute bottom-1 left-1 text-[9px] font-semibold bg-brand-500 text-white px-1.5 py-0.5 rounded-full">Portada</span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="h-44 flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
-                      <Upload className="w-8 h-8" />
-                      <p className="text-sm font-medium">Toca para subir foto</p>
-                      <p className="text-xs">JPG, PNG — máx. 5 MB</p>
+                  ))}
+                  {images.length < MAX_IMAGES && (
+                    <div
+                      onClick={() => document.getElementById("product-image-input")?.click()}
+                      className="h-24 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 dark:border-white/20 hover:border-brand-400 dark:hover:border-brand-500 cursor-pointer text-slate-400 dark:text-slate-500 transition-colors"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <p className="text-[10px] font-medium">Agregar foto</p>
                     </div>
                   )}
                 </div>
@@ -198,17 +223,11 @@ export default function ProductsPage() {
                   id="product-image-input"
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
-                  onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
                 />
-                {imageFile && (
-                  <div className="flex items-center justify-between mt-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/5 px-3 py-1.5 rounded-lg">
-                    <span className="truncate">{imageFile.name}</span>
-                    <button type="button" onClick={() => handleImageChange(null)} className="text-red-400 hover:text-red-600 ml-2 flex-shrink-0">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">La primera foto es la portada. JPG, PNG — máx. 5 MB c/u.</p>
               </div>
 
               <div>
@@ -268,6 +287,11 @@ export default function ProductsPage() {
                   <Image src={p.image_url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <Package className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                )}
+                {p.image_urls && p.image_urls.length > 1 && (
+                  <span className="absolute bottom-2 right-2 text-[10px] font-semibold bg-black/60 text-white px-2 py-0.5 rounded-full">
+                    +{p.image_urls.length - 1} fotos
+                  </span>
                 )}
               </div>
               <div className="p-4">

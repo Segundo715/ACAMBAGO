@@ -2,24 +2,31 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import {
   ArrowLeft, ChevronRight, MapPin, Clock, Package, CreditCard,
   Banknote, Truck, Store, CheckCircle2, Plus, Minus, Trash2,
   MessageSquare, Star, Phone, Copy, AlertCircle,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import type { DeliveryMethod, PaymentMethod } from "@/types";
 import {
   DEMO_CHECKOUT_BUSINESS,
   DEMO_MEETING_POINTS,
   DEMO_BANK_DETAILS,
 } from "@/lib/demo-mode";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type Step = 1 | 2 | 3 | 4 | 5;
-type DeliveryMethod = "pickup" | "meeting" | "home";
-type PaymentMethod = "cash" | "card" | "transfer" | "cod";
 
 interface HomeAddress {
   street: string;
@@ -37,6 +44,17 @@ interface CardData {
   expiry: string;
   cvv: string;
   [key: string]: string;
+}
+
+interface PickupBusiness {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  bank_name: string | null;
+  bank_holder: string | null;
+  bank_clabe: string | null;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -104,11 +122,15 @@ function CheckoutProgress({ step }: { step: Step }) {
 function Step1({
   note,
   setNote,
+  contactPhone,
+  setContactPhone,
   onNext,
   shippingMethod,
 }: {
   note: string;
   setNote: (v: string) => void;
+  contactPhone: string;
+  setContactPhone: (v: string) => void;
   onNext: () => void;
   shippingMethod: DeliveryMethod;
 }) {
@@ -123,9 +145,11 @@ function Step1({
           <span className="font-semibold text-slate-800 dark:text-white text-sm">
             {items.length} {items.length === 1 ? "producto" : "productos"}
           </span>
-          <span className="ml-auto text-xs text-slate-400 dark:text-gray-500 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {DEMO_CHECKOUT_BUSINESS.prepTime}
-          </span>
+          {IS_DEMO && (
+            <span className="ml-auto text-xs text-slate-400 dark:text-gray-500 flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {DEMO_CHECKOUT_BUSINESS.prepTime}
+            </span>
+          )}
         </div>
 
         <div className="divide-y divide-slate-100 dark:divide-white/5">
@@ -166,6 +190,21 @@ function Step1({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Contact phone */}
+      <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-gray-300 mb-2">
+          <Phone className="w-4 h-4 text-slate-400" />
+          Teléfono de contacto
+        </label>
+        <input
+          type="tel"
+          value={contactPhone}
+          onChange={(e) => setContactPhone(e.target.value)}
+          placeholder="Para avisarte sobre tu pedido"
+          className="w-full text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 dark:focus:ring-brand-500"
+        />
       </div>
 
       {/* Note */}
@@ -227,6 +266,7 @@ function Step2({
   address,
   setAddress,
   onNext,
+  pickupBusinesses,
 }: {
   method: DeliveryMethod;
   setMethod: (v: DeliveryMethod) => void;
@@ -235,6 +275,7 @@ function Step2({
   address: HomeAddress;
   setAddress: (v: HomeAddress) => void;
   onNext: () => void;
+  pickupBusinesses: PickupBusiness[];
 }) {
   const canContinue =
     method === "pickup" ||
@@ -271,32 +312,66 @@ function Step2({
       {/* Pickup */}
       {method === "pickup" && (
         <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center flex-shrink-0">
-              <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+          {IS_DEMO ? (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center flex-shrink-0">
+                <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{DEMO_CHECKOUT_BUSINESS.name}</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{DEMO_CHECKOUT_BUSINESS.address}</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-1">
+                  <Clock className="w-3 h-3" /> {DEMO_CHECKOUT_BUSINESS.hours}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-slate-900 dark:text-white text-sm">{DEMO_CHECKOUT_BUSINESS.name}</p>
-              <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{DEMO_CHECKOUT_BUSINESS.address}</p>
-              <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-1">
-                <Clock className="w-3 h-3" /> {DEMO_CHECKOUT_BUSINESS.hours}
-              </p>
+          ) : pickupBusinesses.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-gray-400">Recogerás tu pedido directamente en la tienda.</p>
+          ) : pickupBusinesses.length === 1 ? (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center flex-shrink-0">
+                <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{pickupBusinesses[0].name}</p>
+                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{pickupBusinesses[0].address}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 p-2.5 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20">
-            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <span className="text-xs text-amber-700 dark:text-amber-300">
-              Listo para recoger en <strong>{DEMO_CHECKOUT_BUSINESS.prepTime}</strong>
-            </span>
-          </div>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-brand-200 dark:border-brand-500/30 text-brand-600 dark:text-brand-400 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors"
-          >
-            <MapPin className="w-4 h-4" />
-            Ver en Google Maps (demo)
-          </a>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500 dark:text-gray-400">Tu pedido incluye productos de {pickupBusinesses.length} tiendas distintas, recógelos en cada una:</p>
+              {pickupBusinesses.map((b) => (
+                <div key={b.id} className="flex items-start gap-3">
+                  <Store className="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-slate-900 dark:text-white text-sm">{b.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400">{b.address}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!IS_DEMO && pickupBusinesses.length === 1 && pickupBusinesses[0].latitude != null && pickupBusinesses[0].longitude != null && (
+            <a
+              href={`https://www.google.com/maps?q=${pickupBusinesses[0].latitude},${pickupBusinesses[0].longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-brand-200 dark:border-brand-500/30 text-brand-600 dark:text-brand-400 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Ver en Google Maps
+            </a>
+          )}
+          {IS_DEMO && (
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-brand-200 dark:border-brand-500/30 text-brand-600 dark:text-brand-400 text-sm font-medium hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Ver en Google Maps (demo)
+            </a>
+          )}
         </div>
       )}
 
@@ -317,10 +392,6 @@ function Step2({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">{pt.name}</p>
                 <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{pt.address}</p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs font-semibold text-brand-600 dark:text-brand-400">{pt.distance}</p>
-                <p className="text-xs text-slate-400">{pt.time}</p>
               </div>
             </button>
           ))}
@@ -381,6 +452,7 @@ function Step3({
   setCard,
   total,
   onNext,
+  pickupBusinesses,
 }: {
   method: PaymentMethod;
   setMethod: (v: PaymentMethod) => void;
@@ -390,15 +462,18 @@ function Step3({
   setCard: (v: CardData) => void;
   total: number;
   onNext: () => void;
+  pickupBusinesses: PickupBusiness[];
 }) {
   const cashNum = parseFloat(cashAmount) || 0;
   const change = cashNum > total ? cashNum - total : 0;
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const businessesWithBank = pickupBusinesses.filter((b) => b.bank_clabe);
+  const transferAvailable = IS_DEMO || businessesWithBank.length > 0;
 
-  const copyClabe = () => {
-    navigator.clipboard.writeText(DEMO_BANK_DETAILS.clabe).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyClabe = (clabe: string) => {
+    navigator.clipboard.writeText(clabe).catch(() => {});
+    setCopied(clabe);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const canContinue =
@@ -413,7 +488,7 @@ function Step3({
       {[
         { id: "cash", icon: Banknote, label: "Efectivo", sub: "Pago al recibir" },
         { id: "card", icon: CreditCard, label: "Tarjeta", sub: "Crédito o débito (demo)" },
-        { id: "transfer", icon: Star, label: "Transferencia", sub: "SPEI / CLABE" },
+        ...(transferAvailable ? [{ id: "transfer", icon: Star, label: "Transferencia", sub: "SPEI / CLABE" }] : []),
         { id: "cod", icon: Package, label: "Contra entrega", sub: "Pagas al recibir" },
       ].map(({ id, icon: Icon, label, sub }) => (
         <button
@@ -495,7 +570,7 @@ function Step3({
       )}
 
       {/* Transfer details */}
-      {method === "transfer" && (
+      {method === "transfer" && IS_DEMO && (
         <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
           <p className="text-sm font-semibold text-slate-700 dark:text-gray-300">Datos bancarios (demo)</p>
           {[
@@ -513,11 +588,39 @@ function Step3({
               <p className="text-xs text-slate-400 mb-0.5">CLABE interbancaria</p>
               <p className="text-sm font-mono font-semibold text-slate-800 dark:text-white">{DEMO_BANK_DETAILS.clabe}</p>
             </div>
-            <button onClick={copyClabe} className="p-2 text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-xl transition-colors">
+            <button onClick={() => copyClabe(DEMO_BANK_DETAILS.clabe)} className="p-2 text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-xl transition-colors">
               <Copy className="w-4 h-4" />
             </button>
           </div>
-          {copied && <p className="text-xs text-center text-green-600 dark:text-green-400">¡CLABE copiada!</p>}
+          {copied === DEMO_BANK_DETAILS.clabe && <p className="text-xs text-center text-green-600 dark:text-green-400">¡CLABE copiada!</p>}
+        </div>
+      )}
+
+      {method === "transfer" && !IS_DEMO && (
+        <div className="space-y-3">
+          {businessesWithBank.map((b) => (
+            <div key={b.id} className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
+              <p className="text-sm font-semibold text-slate-700 dark:text-gray-300">{b.name}</p>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500 dark:text-gray-400">Banco</span>
+                <span className="font-medium text-slate-800 dark:text-white">{b.bank_name}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500 dark:text-gray-400">Titular</span>
+                <span className="font-medium text-slate-800 dark:text-white">{b.bank_holder}</span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">CLABE interbancaria</p>
+                  <p className="text-sm font-mono font-semibold text-slate-800 dark:text-white">{b.bank_clabe}</p>
+                </div>
+                <button onClick={() => copyClabe(b.bank_clabe!)} className="p-2 text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-xl transition-colors">
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              {copied === b.bank_clabe && <p className="text-xs text-center text-green-600 dark:text-green-400">¡CLABE copiada!</p>}
+            </div>
+          ))}
         </div>
       )}
 
@@ -544,6 +647,8 @@ function Step4({
   note,
   total,
   onConfirm,
+  confirming,
+  pickupBusinesses,
 }: {
   delivery: DeliveryMethod;
   meetingPoint: string;
@@ -553,6 +658,8 @@ function Step4({
   note: string;
   total: number;
   onConfirm: () => void;
+  confirming: boolean;
+  pickupBusinesses: PickupBusiness[];
 }) {
   const { items } = useCart();
   const shipping = delivery === "home" ? SHIPPING_COST : 0;
@@ -560,7 +667,9 @@ function Step4({
 
   const deliveryLabel =
     delivery === "pickup"
-      ? `Recoger en ${DEMO_CHECKOUT_BUSINESS.name}`
+      ? IS_DEMO
+        ? `Recoger en ${DEMO_CHECKOUT_BUSINESS.name}`
+        : `Recoger en ${pickupBusinesses.map((b) => b.name).join(", ") || "la tienda"}`
       : delivery === "meeting"
       ? `Punto de reunión: ${mp?.name ?? ""}`
       : `Envío a domicilio: ${address.street}, ${address.colonia}`;
@@ -571,10 +680,11 @@ function Step4({
     payment === "transfer" ? "Transferencia bancaria" :
     "Pago contra entrega";
 
-  const etaLabel =
-    delivery === "pickup" ? DEMO_CHECKOUT_BUSINESS.prepTime :
-    delivery === "meeting" ? (mp ? mp.time : "15 min") :
-    "30-45 min";
+  const etaLabel = IS_DEMO
+    ? delivery === "pickup" ? DEMO_CHECKOUT_BUSINESS.prepTime
+      : delivery === "meeting" ? (mp ? mp.time : "15 min")
+      : "30-45 min"
+    : null;
 
   return (
     <div className="space-y-4">
@@ -597,10 +707,12 @@ function Step4({
             <MapPin className="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0" />
             <span className="text-slate-700 dark:text-gray-300">{deliveryLabel}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="w-4 h-4 text-brand-500 flex-shrink-0" />
-            <span className="text-slate-700 dark:text-gray-300">Tiempo estimado: <strong>{etaLabel}</strong></span>
-          </div>
+          {etaLabel && (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="w-4 h-4 text-brand-500 flex-shrink-0" />
+              <span className="text-slate-700 dark:text-gray-300">Tiempo estimado: <strong>{etaLabel}</strong></span>
+            </div>
+          )}
         </div>
 
         <div className="p-4 border-b border-slate-100 dark:border-white/10 space-y-2.5">
@@ -639,14 +751,20 @@ function Step4({
 
       <button
         onClick={onConfirm}
-        className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-base shadow-xl shadow-brand-500/30 active:scale-[0.98]"
+        disabled={confirming}
+        className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 text-base shadow-xl shadow-brand-500/30 active:scale-[0.98]"
       >
-        Confirmar Pedido
-        <CheckCircle2 className="w-5 h-5" />
+        {confirming ? (
+          <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Confirmando...</>
+        ) : (
+          <>Confirmar Pedido <CheckCircle2 className="w-5 h-5" /></>
+        )}
       </button>
 
       <p className="text-center text-xs text-slate-400 dark:text-gray-500">
-        Al confirmar aceptas los términos de la tienda. Modo Demo: ningún cargo real.
+        {IS_DEMO
+          ? "Al confirmar aceptas los términos de la tienda. Modo Demo: ningún cargo real."
+          : "Al confirmar, tu pedido se enviará a la tienda. Si pagas con tarjeta, todavía no se procesa ningún cargo real (no hay pasarela de pago conectada)."}
       </p>
     </div>
   );
@@ -718,10 +836,12 @@ function Step5({ orderId, onTrack, onHome }: { orderId: string; onTrack: () => v
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
   const { items, total, clearCart } = useCart();
 
   const [step, setStep] = useState<Step>(1);
   const [note, setNote] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [delivery, setDelivery] = useState<DeliveryMethod>("pickup");
   const [meetingPoint, setMeetingPoint] = useState("");
   const [address, setAddress] = useState<HomeAddress>({ street: "", references: "", zip: "", colonia: "", city: "Acámbaro, Gto.", phone: "" });
@@ -729,6 +849,8 @@ export default function CheckoutPage() {
   const [cashAmount, setCashAmount] = useState("");
   const [card, setCard] = useState<CardData>({ name: "", number: "", expiry: "", cvv: "" });
   const [orderId, setOrderId] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [pickupBusinesses, setPickupBusinesses] = useState<PickupBusiness[]>([]);
 
   const shipping = delivery === "home" ? SHIPPING_COST : 0;
 
@@ -738,10 +860,90 @@ export default function CheckoutPage() {
     }
   }, [items.length, step, router]);
 
-  const handleConfirm = () => {
-    const id = `ACAM-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    setOrderId(id);
+  useEffect(() => {
+    if (IS_DEMO || items.length === 0) return;
+    const ids = Array.from(new Set(items.map((i) => i.business_id))).filter((id) => UUID_RE.test(id));
+    if (ids.length === 0) return;
+    const supabase = createClient();
+    supabase
+      .from("businesses")
+      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe")
+      .in("id", ids)
+      .then(({ data }) => setPickupBusinesses((data ?? []) as PickupBusiness[]));
+  }, [items]);
+
+  useEffect(() => {
+    if (!IS_DEMO && isLoaded && !user) {
+      router.replace("/login?redirect_url=/checkout");
+    }
+  }, [isLoaded, user, router]);
+
+  const handleConfirm = async () => {
+    if (IS_DEMO || !user) {
+      const id = `ACAM-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      setOrderId(id);
+      clearCart();
+      setStep(5);
+      return;
+    }
+
+    const invalidItem = items.find((i) => !UUID_RE.test(i.business_id) || !UUID_RE.test(i.id));
+    if (invalidItem) {
+      toast.error(`"${invalidItem.name}" es un producto de demostración y no se puede comprar realmente. Quítalo del carrito para continuar.`);
+      return;
+    }
+
+    setConfirming(true);
+    const supabase = createClient();
+    const customerName = user.fullName ?? user.firstName ?? "Cliente";
+    const phone = delivery === "home" ? address.phone : contactPhone;
+
+    const byBusiness = new Map<string, typeof items>();
+    for (const item of items) {
+      const list = byBusiness.get(item.business_id) ?? [];
+      list.push(item);
+      byBusiness.set(item.business_id, list);
+    }
+
+    let firstOrderId: string | null = null;
+
+    for (const [businessId, businessItems] of byBusiness) {
+      const businessSubtotal = businessItems.reduce((s, i) => s + i.price * i.quantity, 0);
+      const businessShipping = delivery === "home" ? SHIPPING_COST : 0;
+
+      const { data: newOrderId, error } = await supabase.rpc("create_order_with_items", {
+        p_business_id: businessId,
+        p_user_id: user.id,
+        p_customer_name: customerName,
+        p_customer_phone: phone || null,
+        p_status: "pendiente",
+        p_delivery_method: delivery,
+        p_payment_method: payment,
+        p_address: delivery === "home" ? address : null,
+        p_note: note || null,
+        p_subtotal: businessSubtotal,
+        p_shipping_cost: businessShipping,
+        p_total: businessSubtotal + businessShipping,
+        p_items: businessItems.map((i) => ({
+          product_id: i.id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+
+      if (error || !newOrderId) {
+        toast.error("No se pudo guardar tu pedido. Intenta de nuevo en unos segundos.");
+        setConfirming(false);
+        return;
+      }
+
+      if (!firstOrderId) firstOrderId = newOrderId as string;
+    }
+
+    setOrderId(firstOrderId ?? "");
     clearCart();
+    setConfirming(false);
     setStep(5);
   };
 
@@ -794,7 +996,7 @@ export default function CheckoutPage() {
       {/* Content */}
       <div className="max-w-lg mx-auto px-4 py-5">
         {step === 1 && (
-          <Step1 note={note} setNote={setNote} onNext={next} shippingMethod={delivery} />
+          <Step1 note={note} setNote={setNote} contactPhone={contactPhone} setContactPhone={setContactPhone} onNext={next} shippingMethod={delivery} />
         )}
         {step === 2 && (
           <Step2
@@ -805,6 +1007,7 @@ export default function CheckoutPage() {
             address={address}
             setAddress={setAddress}
             onNext={next}
+            pickupBusinesses={pickupBusinesses}
           />
         )}
         {step === 3 && (
@@ -817,6 +1020,7 @@ export default function CheckoutPage() {
             setCard={setCard}
             total={total + shipping}
             onNext={next}
+            pickupBusinesses={pickupBusinesses}
           />
         )}
         {step === 4 && (
@@ -829,6 +1033,8 @@ export default function CheckoutPage() {
             note={note}
             total={total}
             onConfirm={handleConfirm}
+            confirming={confirming}
+            pickupBusinesses={pickupBusinesses}
           />
         )}
         {step === 5 && (

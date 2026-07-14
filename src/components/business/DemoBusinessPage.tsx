@@ -2,6 +2,9 @@ import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
 import AddToCartButton from "@/components/ui/AddToCartButton";
+import ShareButton from "@/components/ui/ShareButton";
+import MiniCarousel from "@/components/ui/MiniCarousel";
+import { DEMO_PRODUCT_EXTRAS } from "@/lib/demo-data";
 import { MapPin, Phone, Tag, Package, MessageSquare, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -70,17 +73,20 @@ export default function DemoBusinessPage({
                 </div>
               </div>
             </div>
-            {business.whatsapp && (
-              <a
-                href={`https://wa.me/52${business.whatsapp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary flex items-center gap-2 text-sm"
-              >
-                <Phone className="w-4 h-4" />
-                Contactar por WhatsApp
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {business.whatsapp && (
+                <a
+                  href={`https://wa.me/52${business.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary flex items-center gap-2 text-sm"
+                >
+                  <Phone className="w-4 h-4" />
+                  Contactar por WhatsApp
+                </a>
+              )}
+              <ShareButton businessName={business.name} />
+            </div>
           </div>
 
           {business.description && (
@@ -110,11 +116,15 @@ export default function DemoBusinessPage({
                     <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
                     <div className="flex gap-3 relative z-10">
                       <div className="w-16 h-16 rounded-xl bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden">
-                        {p.image_url ? (
-                          <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl">{emoji}</div>
-                        )}
+                        {(() => {
+                          const extra = DEMO_PRODUCT_EXTRAS[p.id];
+                          const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
+                          return gallery.length ? (
+                            <MiniCarousel images={gallery} name={p.name} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-2xl">{emoji}</div>
+                          );
+                        })()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>

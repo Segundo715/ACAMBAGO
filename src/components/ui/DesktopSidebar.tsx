@@ -7,6 +7,7 @@ import { Home, Tag, LayoutGrid, Map, Ticket, ShoppingCart, LogIn, UserPlus, Layo
 import ThemeToggle from "./ThemeToggle";
 import { useCart } from "@/lib/cart-context";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
+import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
 import { useClerk } from "@clerk/nextjs";
 
 const navItems = [
@@ -26,6 +27,7 @@ export default function DesktopSidebar() {
   const user = userId ? { id: userId } : null;
 
   const handleLogout = async () => {
+    if (getDemoMode()) { stopDemoMode(); return; }
     await signOut();
     router.push("/");
   };

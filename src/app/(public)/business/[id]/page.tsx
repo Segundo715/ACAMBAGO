@@ -4,7 +4,9 @@ import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
 import ReviewSection from "./ReviewSection";
+import ShareButton from "@/components/ui/ShareButton";
 import DemoBusinessPage from "@/components/business/DemoBusinessPage";
+import ProductsReel from "@/components/ui/ProductsReel";
 import {
   DEMO_ALL_BUSINESSES_LIST,
   DEMO_ALL_PRODUCTS,
@@ -12,11 +14,11 @@ import {
   DEMO_ALL_REVIEWS,
 } from "@/lib/demo-data";
 import { MapPin, Phone, Tag, Package } from "lucide-react";
-import AddToCartButton from "@/components/ui/AddToCartButton";
 import Link from "next/link";
-import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 30;
+
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   "Ferretería": "🔧",
@@ -131,11 +133,14 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                   </div>
                 </div>
               </div>
-              {business.whatsapp && (
-                <a href={`https://wa.me/52${business.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="btn-primary flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4" /> WhatsApp
-                </a>
-              )}
+              <div className="flex items-center gap-2">
+                {business.whatsapp && (
+                  <a href={`https://wa.me/52${business.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="btn-primary flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4" /> WhatsApp
+                  </a>
+                )}
+                <ShareButton businessName={business.name} />
+              </div>
             </div>
             {business.description && <p className="text-gray-600 dark:text-gray-300 mt-3">{business.description}</p>}
             <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mt-3">
@@ -145,41 +150,27 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      {products.length > 0 && (
+        <section className="mb-6 -mx-4 overflow-hidden">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 px-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-brand-600" /> Productos
+          </h2>
+          <ProductsReel
+            items={products.map((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              image: p.image_url || p.image_urls?.[0] || FALLBACK_IMAGE,
+              business_id: p.business_id,
+              business_name: business.name,
+              business_category: business.category,
+            }))}
+          />
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {products.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-brand-600" /> Productos
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {products.map((p) => (
-                  <div key={p.id} className="card p-4 flex flex-col gap-3 relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
-                    <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
-                    <div className="flex gap-3 relative z-10">
-                      <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-white/10 flex-shrink-0 overflow-hidden">
-                        {p.image_url ? (
-                          <Image src={p.image_url} alt={p.name} width={64} height={64} className="object-cover w-full h-full" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-6 h-6 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
-                        {p.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>}
-                        <p className="text-brand-600 dark:text-brand-400 font-bold text-sm mt-1">{formatPrice(p.price)}</p>
-                      </div>
-                    </div>
-                    <div className="relative z-10">
-                      <AddToCartButton product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
           <ReviewSection businessId={business.id} initialReviews={reviews} />
         </div>
 

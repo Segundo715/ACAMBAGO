@@ -8,6 +8,7 @@ import { Menu, X, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store,
 import { useCart } from "@/lib/cart-context";
 import ThemeToggle from "./ThemeToggle";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
+import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
 import { useClerk } from "@clerk/nextjs";
 
 export default function Navbar() {
@@ -19,6 +20,7 @@ export default function Navbar() {
   const user = userId ? { id: userId } : null;
 
   const handleLogout = async () => {
+    if (getDemoMode()) { stopDemoMode(); return; }
     await signOut();
     setMenuOpen(false);
     router.push("/");

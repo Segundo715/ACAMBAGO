@@ -7,6 +7,7 @@ import LogoutButton from "@/components/ui/LogoutButton";
 import UserInfo from "@/components/ui/UserInfo";
 import DashboardNav from "./DashboardNav";
 import DemoBanner from "@/components/ui/DemoBanner";
+import PendingApprovalGate from "./PendingApprovalGate";
 import { Store, ShoppingBag } from "lucide-react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -16,6 +17,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Demo seller bypasses role check (middleware already blocked demo buyer)
   const cookieStore = await cookies();
   const isDemoSeller = cookieStore.get("demo_mode")?.value === "seller";
+
+  let pendingApproval = false;
 
   if (!isDemoSeller && !IS_DEMO) {
     const { userId } = await auth();
@@ -31,6 +34,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (profile?.role !== "business" && profile?.role !== "admin") {
       redirect("/");
+    }
+
+    if (profile.role === "business") {
+      const { data: business } = await supabase
+        .from("businesses")
+        .select("is_approved")
+        .eq("owner_id", userId)
+        .single();
+      pendingApproval = !business || !business.is_approved;
     }
   }
   return (
@@ -100,7 +112,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         <DemoBanner />
-        <main className="p-4 lg:p-8 pb-24 lg:pb-8">{children}</main>
+        <main className="p-4 lg:p-8 pb-24 lg:pb-8">
+          <PendingApprovalGate pendingApproval={pendingApproval}>{children}</PendingApprovalGate>
+        </main>
       </div>
     </div>
   );

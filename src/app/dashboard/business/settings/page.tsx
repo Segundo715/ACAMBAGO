@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
-import { Settings, MapPin, Save, Upload } from "lucide-react";
+import { Settings, MapPin, Save, Upload, LocateFixed } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SettingsPage() {
@@ -14,7 +14,28 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [locating, setLocating] = useState(false);
   const supabase = createClient();
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Tu navegador no soporta geolocalización");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setBusiness((prev) => ({ ...prev, latitude: pos.coords.latitude, longitude: pos.coords.longitude }));
+        setLocating(false);
+        toast.success("Ubicación detectada");
+      },
+      () => {
+        setLocating(false);
+        toast.error("No se pudo obtener tu ubicación. Revisa los permisos del navegador.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   useEffect(() => {
     if (!isLoaded || !user) return;
@@ -24,7 +45,7 @@ export default function SettingsPage() {
         setBusiness(data as Business);
       } else {
         setIsNew(true);
-        setBusiness({ category: "Restaurante", latitude: 20.0319, longitude: -100.7273 });
+        setBusiness({ category: "Otro", latitude: 20.0319, longitude: -100.7273 });
       }
       setLoading(false);
     };
@@ -58,6 +79,9 @@ export default function SettingsPage() {
       longitude: business.longitude,
       whatsapp: business.whatsapp,
       image_url,
+      bank_name: business.bank_name || null,
+      bank_holder: business.bank_holder || null,
+      bank_clabe: business.bank_clabe || null,
     };
 
     if (isNew) {
@@ -154,21 +178,57 @@ export default function SettingsPage() {
             Ubicación en el mapa
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Ingresa las coordenadas de tu negocio. Puedes obtenerlas en Google Maps haciendo clic en tu ubicación.
+            Para que tu negocio aparezca en el mapa, usa tu ubicación actual (párate en tu negocio y da clic).
           </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Latitud</label>
-              <input type="number" step="any" value={business.latitude ?? ""} onChange={(e) => update("latitude", parseFloat(e.target.value))} className="input" placeholder="20.0319" />
+          <button
+            type="button"
+            onClick={handleUseLocation}
+            disabled={locating}
+            className="btn-primary w-full flex items-center justify-center gap-2 text-sm"
+          >
+            {locating ? (
+              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Detectando ubicación...</>
+            ) : (
+              <><LocateFixed className="w-4 h-4" /> Usar mi ubicación actual</>
+            )}
+          </button>
+          {business.latitude != null && business.longitude != null && (
+            <p className="text-xs text-green-600 dark:text-green-400 text-center">
+              ✓ Ubicación guardada: {business.latitude.toFixed(5)}, {business.longitude.toFixed(5)}
+            </p>
+          )}
+          <details className="text-xs text-slate-400 dark:text-slate-500">
+            <summary className="cursor-pointer hover:text-slate-600 dark:hover:text-slate-300">¿Prefieres poner las coordenadas a mano?</summary>
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              <div>
+                <label className="label">Latitud</label>
+                <input type="number" step="any" value={business.latitude ?? ""} onChange={(e) => update("latitude", parseFloat(e.target.value))} className="input" placeholder="20.0319" />
+              </div>
+              <div>
+                <label className="label">Longitud</label>
+                <input type="number" step="any" value={business.longitude ?? ""} onChange={(e) => update("longitude", parseFloat(e.target.value))} className="input" placeholder="-100.7273" />
+              </div>
             </div>
-            <div>
-              <label className="label">Longitud</label>
-              <input type="number" step="any" value={business.longitude ?? ""} onChange={(e) => update("longitude", parseFloat(e.target.value))} className="input" placeholder="-100.7273" />
-            </div>
+          </details>
+        </div>
+
+        <div className="card p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900 dark:text-white">Datos bancarios (opcional)</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Si los llenas, tus clientes podrán pagarte por transferencia directo en el checkout, con tu cuenta real.
+          </p>
+          <div>
+            <label className="label">Banco</label>
+            <input value={business.bank_name ?? ""} onChange={(e) => update("bank_name", e.target.value)} className="input" placeholder="Ej: BBVA" />
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            Acámbaro centro: 20.0319, -100.7273
-          </p>
+          <div>
+            <label className="label">Titular de la cuenta</label>
+            <input value={business.bank_holder ?? ""} onChange={(e) => update("bank_holder", e.target.value)} className="input" placeholder="Nombre del titular" />
+          </div>
+          <div>
+            <label className="label">CLABE interbancaria</label>
+            <input value={business.bank_clabe ?? ""} onChange={(e) => update("bank_clabe", e.target.value)} className="input" placeholder="18 dígitos" maxLength={18} />
+          </div>
         </div>
 
         <button type="submit" disabled={saving} className="btn-primary w-full flex items-center justify-center gap-2">

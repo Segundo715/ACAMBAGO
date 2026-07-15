@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [selected, setSelected] = useState(0);
 
-  // Movimiento automático, igual que el carrusel de "Productos".
+  // Movimiento automático, igual que el carrusel de "Productos", sin flechas.
   useEffect(() => {
     if (images.length <= 1) return;
     const timer = setInterval(() => {
@@ -15,9 +14,6 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
     }, 2500);
     return () => clearInterval(timer);
   }, [images.length]);
-
-  const prev = () => setSelected((s) => (s - 1 + images.length) % images.length);
-  const next = () => setSelected((s) => (s + 1) % images.length);
 
   return (
     <div className="space-y-3">
@@ -31,18 +27,6 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
         />
         {images.length > 1 && (
           <>
-            <button
-              onClick={prev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 dark:bg-slate-800/80 rounded-full flex items-center justify-center shadow-md hover:bg-white dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-white" />
-            </button>
-            <button
-              onClick={next}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 dark:bg-slate-800/80 rounded-full flex items-center justify-center shadow-md hover:bg-white dark:hover:bg-slate-700 transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-slate-700 dark:text-white" />
-            </button>
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
               {images.map((_, i) => (
                 <button

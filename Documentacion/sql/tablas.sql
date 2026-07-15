@@ -10,6 +10,9 @@
 --   3. supabase/orders-schema.sql
 --   4. supabase/orders-rpc.sql
 --   5. supabase/products-gallery-and-bank.sql
+--   6. supabase/payments-gateway.sql          (payment_status y campos de Mercado Pago en orders)
+--   7. supabase/payments-per-business.sql     (mp_public_key / mp_access_token en businesses)
+--   8. supabase/stripe-connect.sql            (Stripe Connect por negocio + stripe_payment_intent_id)
 --
 -- IMPORTANTE: el proyecto usa Clerk para autenticacion, NO Supabase Auth.
 -- Por eso RLS esta DESHABILITADO en todas las tablas: la seguridad se valida
@@ -54,6 +57,10 @@ CREATE TABLE public.businesses (
   bank_name    TEXT,                           -- datos bancarios reales (transferencia)
   bank_holder  TEXT,
   bank_clabe   TEXT,
+  mp_public_key          TEXT,                  -- Mercado Pago: credenciales PROPIAS de la tienda
+  mp_access_token        TEXT,                  --   (el cobro se hace con la cuenta del vendedor)
+  stripe_account_id      TEXT,                  -- Stripe Connect: cuenta Express conectada del negocio
+  stripe_charges_enabled BOOLEAN NOT NULL DEFAULT false, -- true cuando Stripe ya habilita cobros
   rating_avg   NUMERIC(3,2) DEFAULT 0,
   rating_count INTEGER DEFAULT 0,
   is_approved  BOOLEAN DEFAULT false,          -- el admin lo pone en true para publicar
@@ -140,7 +147,12 @@ CREATE TABLE public.orders (
   delivery_method TEXT NOT NULL DEFAULT 'pickup'
                     CHECK (delivery_method IN ('pickup', 'meeting', 'home')),
   payment_method  TEXT NOT NULL DEFAULT 'cash'
-                    CHECK (payment_method IN ('cash', 'card', 'transfer', 'cod')),
+                    CHECK (payment_method IN ('cash', 'card', 'transfer', 'cod', 'mercadopago', 'stripe')),
+  payment_status  TEXT NOT NULL DEFAULT 'pendiente'  -- estado del COBRO, independiente de status (entrega)
+                    CHECK (payment_status IN ('pendiente', 'pagado', 'fallido')),
+  mp_preference_id         TEXT,                -- Mercado Pago: preferencia de Checkout Pro
+  mp_payment_id            TEXT,                --   y id del pago que confirma el webhook
+  stripe_payment_intent_id TEXT,               -- Stripe: PaymentIntent del destination charge
   address         JSONB,                        -- direccion completa cuando es envio a domicilio
   note            TEXT,
   subtotal        NUMERIC(10,2) NOT NULL DEFAULT 0,

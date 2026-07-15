@@ -59,3 +59,44 @@
 - Creada la carpeta `Documentacion/` completa (índice, documentación técnica navegable, snapshot completo, manual técnico, manuales de vendedor y comprador, este registro de sesiones, y el esquema SQL consolidado), generada con Claude Opus mediante exploración exhaustiva del código fuente real, siguiendo la misma estructura y estándar que la documentación de otro proyecto del autor.
 
 ---
+
+## 2026-07-14 — Martes (tarde) — Pagos con tarjeta: Mercado Pago y Stripe Connect por tienda
+
+### Requisito de negocio que motivó el diseño
+
+El dueño del producto puso una condición estricta y explícita: **el dinero de cada venta debe llegar directo a la cuenta de la tienda vendedora, nunca concentrarse en una cuenta central de AcambaGo**. La plataforma no debe ser intermediaria del dinero. Ese requisito descartó el enfoque de "una sola cuenta de pasarela global" y obligó a que cada negocio conecte sus propias credenciales, y a que cada cobro se haga con la cuenta del vendedor dueño de ese pedido. Se implementaron dos pasarelas con ese mismo principio, para que cada tienda use la que prefiera (o ambas).
+
+### Mercado Pago por negocio (Checkout Pro)
+
+- **SQL** (`supabase/payments-per-business.sql` y `supabase/payments-gateway.sql`): se agregaron a `businesses` las columnas `mp_public_key` y `mp_access_token` (credenciales propias de cada tienda); a `orders` las columnas `payment_status` (`pendiente`/`pagado`/`fallido`, separado de `status` de entrega), `mp_preference_id` y `mp_payment_id`; y se amplió el CHECK de `orders.payment_method` para incluir `'mercadopago'`.
+- **Ajustes del vendedor** (`dashboard/business/settings/page.tsx`): nueva sección "Mercado Pago (opcional)" donde cada vendedor pega su propia Public Key y Access Token (los saca de su panel de desarrollador de Mercado Pago).
+- **Crear preferencia** (`api/mercadopago/create-preference/route.ts`): al confirmar un pedido, busca el `mp_access_token` **del negocio dueño del pedido** (no un token global) y con ese token crea la preferencia de Checkout Pro. Así el cobro sale a nombre del vendedor y el dinero cae en su cuenta. En la `notification_url` embebe `?business_id=<id>` para que el webhook sepa qué token usar.
+- **Webhook** (`api/mercadopago/webhook/route.ts`): Mercado Pago llama server-to-server; la ruta lee `business_id` del query, recupera el token de ESE negocio, vuelve a consultar el pago con la API (no confía en el body) y actualiza `orders.payment_status`/`mp_payment_id`.
+- **Checkout** (`(public)/checkout/page.tsx`): "Mercado Pago" solo aparece como método de pago si **todas** las tiendas del carrito tienen `mp_public_key` configurado. Si se elige con productos de más de una tienda, se bloquea con un toast pidiendo hacer pedidos separados (una preferencia solo puede cobrar a nombre de un vendedor).
+
+### Stripe Connect por negocio (destination charges)
+
+Mismo principio, pero con onboarding real de identidad y banco de Stripe, no solo un token que se copia y pega.
+
+- **SQL** (`supabase/stripe-connect.sql`): se agregaron a `businesses` las columnas `stripe_account_id` y `stripe_charges_enabled`; a `orders` la columna `stripe_payment_intent_id`; y se amplió otra vez el CHECK de `orders.payment_method` para incluir `'stripe'`.
+- **Cliente de Stripe** (`src/lib/stripe/server.ts`): instancia perezosa del SDK con `STRIPE_SECRET_KEY` (la cuenta de AcambaGo actúa como **plataforma**, no como destino del dinero).
+- **Conectar cuenta** (`api/stripe/connect/route.ts`): `POST` crea (si no existe) una cuenta conectada **Express** para el negocio del vendedor (`stripe.accounts.create`, país MX, capacidades `card_payments` + `transfers`) y genera un Account Link de onboarding hospedado por Stripe (`refresh_url`/`return_url` de vuelta a Ajustes). `GET` consulta el estado real (`charges_enabled`) y sincroniza `businesses.stripe_charges_enabled`.
+- **Ajustes del vendedor**: nueva sección "Stripe (opcional)" con un botón "Conectar con Stripe" que redirige al onboarding de Stripe (identidad + cuenta bancaria real, cualquier banco, incluido BBVA). Al volver (`?stripe_return=1`) se re-consulta el estado; muestra "Stripe conectado y listo para recibir pagos" cuando `stripe_charges_enabled` es true.
+- **Crear sesión de pago** (`api/stripe/create-checkout-session/route.ts`): crea una Stripe Checkout Session en modo `payment` con `payment_intent_data.transfer_data.destination = <stripe_account_id del negocio dueño del pedido>`. Esto es un **destination charge**: el dinero se transfiere automáticamente a la cuenta del vendedor, no se queda en la de la plataforma. Guarda `order_id` en la metadata del PaymentIntent.
+- **Webhook** (`api/stripe/webhook/route.ts`): verifica la firma con `STRIPE_WEBHOOK_SECRET`, escucha `payment_intent.succeeded`/`payment_intent.payment_failed`, lee `order_id` de la metadata y actualiza `orders.payment_status`/`stripe_payment_intent_id`.
+- **Checkout**: "Tarjeta (Stripe)" solo aparece si **todas** las tiendas del carrito tienen `stripe_charges_enabled = true`, con la misma regla de una sola tienda por pedido que Mercado Pago.
+
+### Flujo de confirmación del pedido
+
+En `handleConfirm`, el pedido se **guarda primero** con el RPC `create_order_with_items` (igual que siempre, `payment_status` queda en `pendiente`); recién después se llama a la ruta de la pasarela y se redirige al usuario (`init_point` de Mercado Pago o `url` de Stripe Checkout). Si la creación de la preferencia/sesión falla, el pedido ya quedó guardado y se avisa al comprador que contacte a la tienda. El webhook confirma el cobro de forma asíncrona.
+
+### Otros cambios
+
+- Se **eliminó la tarjeta de pago simulada** ("Modo Demo: no se procesará ningún cargo real") del checkout en modo real. En **modo demo** (sin credenciales) esa tarjeta simulada se conserva igual, porque el modo demo nunca toca la base de datos.
+- **Variables de entorno nuevas** en `.env.local` y en Vercel producción (`jesus-proyectos/acambago`): `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. Se **eliminaron** de ambos lugares las viejas `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`/`MERCADOPAGO_ACCESS_TOKEN` (eran de una cuenta global, enfoque descartado); esas credenciales de prueba de Mercado Pago se migraron a la fila del negocio real "RopaSecond" en Supabase (`businesses.mp_public_key`/`mp_access_token`).
+- **Webhook de Stripe** registrado en el dashboard apuntando a `https://acambago-kappa.vercel.app/api/stripe/webhook`, con ámbito "Tu cuenta" (no "Cuentas conectadas", porque el PaymentIntent se crea desde la cuenta de la plataforma aunque el dinero se transfiera después a la conectada), eventos `payment_intent.succeeded` + `payment_intent.payment_failed`.
+- **Nota operativa de Stripe:** al configurar la cuenta de la plataforma hubo que activar manualmente "Accounts v1 support" en el dashboard (Configuración → Funciones de la cuenta), porque Stripe ya no permite por defecto crear cuentas Express con la API v1 en cuentas nuevas. El código usa la API v1 (Express accounts + Account Links), que sigue siendo válida con esa compatibilidad activada.
+
+**Publicación:** todo desplegado en producción (Vercel + GitHub, commits hechos) y verificado funcionando, incluida la creación de cuentas Stripe Express tras habilitar el soporte v1.
+
+---

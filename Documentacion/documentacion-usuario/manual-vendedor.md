@@ -15,6 +15,7 @@ Al registrar tu tienda en Acom-Di, tienes un panel propio en `/dashboard/busines
 - Crear cupones de descuento con código QR y escanearlos cuando un cliente los presente.
 - Ver y dar seguimiento a tus pedidos, con aviso sonoro en cuanto entra uno nuevo.
 - Configurar tu cuenta bancaria para recibir transferencias reales.
+- Conectar Mercado Pago o Stripe para cobrar con tarjeta, con el dinero directo a tu cuenta.
 - Compartir tu ubicación exacta con un solo botón.
 - Revisar tus reseñas y tus estadísticas.
 
@@ -121,7 +122,35 @@ Si llenas estos tres datos, tus clientes verán **"Transferencia"** como opción
 
 ---
 
-## 7. Ubicar tu negocio en el mapa
+## 7. Cobrar con tarjeta (Mercado Pago y Stripe)
+
+Puedes aceptar pagos con tarjeta directo en el checkout. Hay dos formas y puedes usar la que prefieras (o las dos). En **ambos casos el dinero le llega directo a tu cuenta, nunca a AcambaGo**: la plataforma no se queda con tu dinero ni cobra comisión por pasar por ahí. Cada tienda conecta lo suyo por su lado.
+
+### Opción A: Mercado Pago
+
+Si ya tienes una cuenta de Mercado Pago, es la vía más rápida.
+
+1. Entra a tu panel de desarrollador de Mercado Pago (`mercadopago.com.mx/developers/panel/credentials`) y copia tus credenciales: **Public Key** y **Access Token**.
+2. En Acom-Di, ve a **Configuración**, sección **"Mercado Pago (opcional)"**.
+3. Pega tu **Public Key** y tu **Access Token** y guarda los cambios.
+
+Listo: tus clientes verán **"Mercado Pago"** como opción de pago y podrán pagarte con tarjeta, OXXO o SPEI. El cobro se hace **con tu propia cuenta de Mercado Pago**, así que el dinero cae directo ahí.
+
+### Opción B: Stripe
+
+Stripe te pide verificar tu identidad y tu cuenta bancaria (es el proceso de Stripe, no de Acom-Di), y sirve con cualquier banco, incluido BBVA.
+
+1. En **Configuración**, sección **"Stripe (opcional)"**, presiona **"Conectar con Stripe"**.
+2. Te lleva a una página de Stripe donde completas tus datos de identidad y tu cuenta bancaria real. Sigue los pasos hasta terminar.
+3. Al volver a Acom-Di, si Stripe ya te habilitó los cobros, verás el mensaje **"Stripe conectado y listo para recibir pagos"**. Si Stripe todavía está revisando tus datos, te avisará que completes el proceso.
+
+Una vez conectado, tus clientes verán la opción **"Tarjeta (pago seguro con Stripe)"** en el checkout. Cada pago que recibas se transfiere **directo a tu cuenta de Stripe** (y de ahí a tu banco), no a AcambaGo.
+
+> Importante: con Mercado Pago o Stripe, un cliente solo puede pagar productos de **una tienda por pedido**. Si su carrito tiene productos de varias tiendas, la app le pide hacer un pedido separado para cada una. Esto es porque cada cobro va a nombre de un solo vendedor.
+
+---
+
+## 8. Ubicar tu negocio en el mapa
 
 En **Configuración**, en "Ubicación en el mapa":
 
@@ -134,14 +163,14 @@ Si prefieres escribir las coordenadas a mano, hay una opción "¿Prefieres poner
 
 ---
 
-## 8. Reseñas y estadísticas
+## 9. Reseñas y estadísticas
 
 - **Reseñas:** en la sección Reseñas puedes ver las calificaciones y comentarios que tus clientes han dejado en tu perfil público. Tu calificación promedio se recalcula automáticamente cada vez que entra una reseña nueva.
 - **Analíticas:** en la sección Analytics, y también en la pantalla de Inicio del panel, encuentras tus KPIs principales: productos publicados, cupones activos y canjeados, calificación y reseñas totales, además de una gráfica de ingresos de los últimos 7 días y tus pedidos recientes.
 
 ---
 
-## 9. Preguntas frecuentes
+## 10. Preguntas frecuentes
 
 **¿Por qué no puedo agregar productos apenas me registro?**
 Porque tu negocio todavía no ha sido aprobado por un administrador. Mientras esperas, solo puedes usar Configuración.
@@ -150,10 +179,13 @@ Porque tu negocio todavía no ha sido aprobado por un administrador. Mientras es
 Depende de cuándo un administrador de Acom-Di revise tu registro; no hay un tiempo fijo.
 
 **¿Puedo vender sin cuenta bancaria?**
-Sí. Sin CLABE registrada, tus clientes solo verán las demás opciones de pago (efectivo, tarjeta simulada, contra entrega).
+Sí. Sin CLABE ni Mercado Pago ni Stripe conectados, tus clientes verán las demás opciones de pago (efectivo, contra entrega).
 
 **¿El pago con tarjeta es real?**
-No todavía. Es una simulación a propósito; Acom-Di lo indica claramente al cliente durante el checkout. No se procesa ningún cargo real.
+Sí, si conectas Mercado Pago o Stripe (sección 7). El dinero te llega directo a tu cuenta, nunca a AcambaGo. Si no conectas ninguno, la opción de tarjeta simplemente no aparece para tus clientes.
+
+**¿AcambaGo se queda con una parte de mis ventas?**
+No. El dinero de cada venta va directo a tu cuenta de Mercado Pago o de Stripe. AcambaGo no es intermediario del dinero ni cobra comisión por el cobro.
 
 **¿Cuántas fotos puedo subir por producto?**
 Hasta 6. La primera que subas es la que se usa como portada en las tarjetas de tu tienda.

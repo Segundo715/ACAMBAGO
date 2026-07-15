@@ -29,7 +29,13 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
+# Stripe (plataforma; agregadas en la sesión de la tarde del 2026-07-14)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 ```
+
+> Las credenciales de **Mercado Pago no van en variables de entorno**: cada tienda guarda su propia Public Key / Access Token en `businesses.mp_public_key`/`mp_access_token`. Las viejas `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`/`MERCADOPAGO_ACCESS_TOKEN` (una cuenta global) se eliminaron; ese enfoque quedó descartado porque el dinero debe llegar a cada tienda, no a la plataforma.
 
 Reglas de detección de demo (se repiten en varios archivos):
 
@@ -55,6 +61,9 @@ Todos los archivos viven en `supabase/`. Si se recrea la base desde cero, correr
 3. **`orders-schema.sql`** — `orders`, `order_items`, índices, RLS off y `ALTER PUBLICATION supabase_realtime ADD TABLE orders`.
 4. **`orders-rpc.sql`** — función `create_order_with_items` + `GRANT EXECUTE` a `anon, authenticated`.
 5. **`products-gallery-and-bank.sql`** — `products.image_urls TEXT[]` + `businesses.bank_name/holder/clabe`.
+6. **`payments-gateway.sql`** — amplía el CHECK de `orders.payment_method` (agrega `mercadopago`), y agrega `orders.payment_status/mp_preference_id/mp_payment_id`.
+7. **`payments-per-business.sql`** — `businesses.mp_public_key/mp_access_token` (credenciales de Mercado Pago por tienda).
+8. **`stripe-connect.sql`** — `businesses.stripe_account_id/stripe_charges_enabled`, `orders.stripe_payment_intent_id`, y amplía otra vez el CHECK de `payment_method` (agrega `stripe`).
 
 El **estado final consolidado** (sin historial de migraciones) está en [`sql/tablas.sql`](../sql/tablas.sql), listo como referencia de "cómo están las tablas hoy".
 
@@ -121,7 +130,7 @@ El **estado final consolidado** (sin historial de migraciones) está en [`sql/ta
 
 ## 7. Huecos conocidos y TODOs (verificados en código)
 
-1. **Pagos reales:** tarjeta simulada a propósito (banner en la UI); transferencia sin CLABE no se ofrece. Falta integrar pasarela (Stripe/Mercado Pago).
+1. **Pagos reales:** resuelto en la sesión de la tarde del 2026-07-14 (ver `sesiones/sesiones.md`). Hay tarjeta real **por tienda** con Mercado Pago (Checkout Pro) y Stripe Connect (destination charges); cada negocio conecta sus propias credenciales y el dinero le llega directo, nunca a la plataforma. La tarjeta simulada solo queda en modo demo. Pendiente menor: reflejar `payment_status` en la UI y manejar reembolsos.
 2. **Notificaciones al comprador** (WhatsApp/email) al cambiar el estado del pedido: no existen; solo hay notificación en vivo al vendedor.
 3. **Seguimiento de pedido:** la página `checkout/tracking` es una animación demostrativa, no lee el estado real.
 4. **Clerk en desarrollo:** banner y límites de uso; pasar a producción requiere dominio verificado.

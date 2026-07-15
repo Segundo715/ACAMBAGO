@@ -1,6 +1,6 @@
 # Índice de Documentación — AcambaGo (marca "Acom-Di")
 
-> Última actualización: 2026-07-14
+> Última actualización: 2026-07-14 (tarde: pagos con tarjeta vía Mercado Pago y Stripe Connect, por tienda)
 > Marketplace local de Acámbaro, Guanajuato. Auth con Clerk, base de datos en Supabase, deploy en Vercel.
 
 ---
@@ -28,8 +28,8 @@
 
 | Archivo | Descripción |
 |---------|-------------|
-| [manual-vendedor](documentacion-usuario/manual-vendedor.md) | Guía paso a paso para dueños de negocio: registro, aprobación, productos con fotos, cupones QR, pedidos, datos bancarios y ubicación |
-| [manual-comprador](documentacion-usuario/manual-comprador.md) | Guía para compradores: explorar tiendas, carrito, checkout, seguimiento, reseñas y cupones |
+| [manual-vendedor](documentacion-usuario/manual-vendedor.md) | Guía paso a paso para dueños de negocio: registro, aprobación, productos con fotos, cupones QR, pedidos, datos bancarios, cobro con tarjeta (Mercado Pago / Stripe) y ubicación |
+| [manual-comprador](documentacion-usuario/manual-comprador.md) | Guía para compradores: explorar tiendas, carrito, checkout, pago con tarjeta, seguimiento, reseñas y cupones |
 
 ---
 

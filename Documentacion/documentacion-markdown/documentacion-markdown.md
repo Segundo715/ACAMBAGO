@@ -17,7 +17,7 @@ AcambaGo, presentada al público con la marca visual **Acom-Di**, es un marketpl
 | **Vendedor** (`business`) | `/dashboard/business/*` | Administra su tienda: productos con fotos, cupones QR, pedidos en vivo, datos bancarios y ubicación |
 | **Admin** (`admin`) | `/admin` | Aprueba negocios nuevos, los suspende o reactiva, ve usuarios y métricas globales |
 
-El modelo de negocio es de **directorio + pedidos**: no hay comisiones ni pasarela de pago conectada todavía; el valor está en dar visibilidad a los negocios locales y facilitar el contacto comprador-vendedor (WhatsApp, recoger en tienda, punto de reunión, envío a domicilio).
+El modelo de negocio es de **directorio + pedidos**: AcambaGo **no cobra comisiones ni concentra el dinero**. El valor está en dar visibilidad a los negocios locales y facilitar el contacto comprador-vendedor (WhatsApp, recoger en tienda, punto de reunión, envío a domicilio). Desde 2026-07-14 (tarde) hay pagos con tarjeta reales vía **Mercado Pago** y **Stripe Connect**, pero conectados **por tienda**: cada negocio pone sus propias credenciales y el dinero de cada venta cae directo en la cuenta del vendedor, nunca en una cuenta de la plataforma (ver §9.5).
 
 Convención del proyecto: **no hay comida ni restaurantes**. `BUSINESS_CATEGORIES` solo incluye servicios y productos físicos (ropa, ferretería, farmacia, electrónica, etc.).
 
@@ -110,6 +110,11 @@ src/
 │       ├── businesses/route.ts    # POST: crear negocio
 │       ├── coupons/validate/route.ts  # POST: validar y canjear cupón
 │       ├── reviews/route.ts       # POST: dejar reseña
+│       ├── mercadopago/create-preference/route.ts  # POST: preferencia con token del negocio
+│       ├── mercadopago/webhook/route.ts            # POST: confirma pago (server-to-server)
+│       ├── stripe/connect/route.ts                 # POST/GET: cuenta Express + estado
+│       ├── stripe/create-checkout-session/route.ts # POST: destination charge
+│       ├── stripe/webhook/route.ts                 # POST: confirma PaymentIntent (firma)
 │       └── auth/callback/route.ts # (heredado de Supabase Auth; ver §12)
 │
 ├── components/
@@ -133,6 +138,7 @@ src/
 │   ├── supabase/client.ts         # Browser client
 │   ├── supabase/server.ts         # Server client (cookies)
 │   ├── supabase/middleware.ts     # (refresco de sesión; ver §12)
+│   ├── stripe/server.ts           # Cliente Stripe de la plataforma (STRIPE_SECRET_KEY)
 │   ├── cart-context.tsx           # CartProvider en memoria
 │   ├── demo-data.ts               # ~29 negocios + productos + cupones + reseñas hardcodeados
 │   ├── demo-mode.ts               # Cuentas demo (cookie demo_mode)
@@ -153,12 +159,12 @@ El esquema final consolidado está en [`sql/tablas.sql`](../sql/tablas.sql). Res
 | Tabla | Para qué | Notas |
 |-------|----------|-------|
 | `profiles` | Perfil de cada usuario de Clerk | `id` es TEXT (`user_xxx`). `role`: `client` / `business` / `admin` |
-| `businesses` | Tiendas | `owner_id` → `profiles.id`. Campos de banco (`bank_*`), `is_approved`, `is_active`, `rating_avg/count` |
+| `businesses` | Tiendas | `owner_id` → `profiles.id`. Campos de banco (`bank_*`), credenciales de Mercado Pago (`mp_public_key`, `mp_access_token`), Stripe Connect (`stripe_account_id`, `stripe_charges_enabled`), `is_approved`, `is_active`, `rating_avg/count` |
 | `products` | Catálogo | `image_urls TEXT[]` (galería) + `image_url` (portada = primer elemento) |
 | `coupons` | Cupones | `code` único (`ACAM-XXXXXX`), `qr_data` con JSON, `used_count`/`limit_count` |
 | `coupon_redemptions` | Canjes | Un registro por canje |
 | `reviews` | Reseñas | 1 por `(business_id, user_id)`. Trigger recalcula `rating_avg/count` |
-| `orders` | Pedidos | `status`, `delivery_method`, `payment_method`, `address` JSONB, totales. En Realtime |
+| `orders` | Pedidos | `status`, `delivery_method`, `payment_method`, `payment_status`, `address` JSONB, totales, campos de pasarela (`mp_preference_id`, `mp_payment_id`, `stripe_payment_intent_id`). En Realtime |
 | `order_items` | Renglones de un pedido | Guardan copia de `name` y `price` al momento de la compra |
 
 ### 4.1 Tipos TypeScript (`src/types/index.ts`)
@@ -170,7 +176,7 @@ type UserRole      = "client" | "business" | "admin";
 type DiscountType  = "percent" | "fixed";
 type OrderStatus   = "pendiente" | "en_camino" | "entregado" | "cancelado";
 type DeliveryMethod = "pickup" | "meeting" | "home";
-type PaymentMethod = "cash" | "card" | "transfer" | "cod";
+type PaymentMethod = "cash" | "card" | "transfer" | "cod" | "mercadopago" | "stripe";
 ```
 
 `BUSINESS_CATEGORIES` (16 categorías, sin comida):
@@ -242,14 +248,34 @@ Pasos: **1 Resumen** (edita cantidades, teléfono de contacto, notas), **2 Entre
   - `pickup`: recoger en tienda. En modo real consulta las tiendas del carrito (`pickupBusinesses`) y muestra dirección + enlace a Google Maps si hay `latitude/longitude`.
   - `meeting`: punto de reunión, de una lista demo (`DEMO_MEETING_POINTS`).
   - `home`: envío a domicilio (+`SHIPPING_COST` = 35). Formulario de dirección.
-- **Pago:** `cash`, `card`, `transfer`, `cod`.
-  - **Tarjeta:** formulario con validación de formato, pero **simulado a propósito** (banner "Modo Demo: no se procesará ningún cargo real"). No hay pasarela conectada.
-  - **Transferencia:** solo aparece como opción si al menos un negocio del carrito tiene `bank_clabe` configurado (`businessesWithBank`). Muestra los datos bancarios **reales** del negocio (banco, titular, CLABE con botón de copiar). En modo demo usa `DEMO_BANK_DETAILS`.
+- **Pago:** `cash`, `card`, `transfer`, `cod`, `mercadopago`, `stripe`. Las opciones se arman dinámicamente según las tiendas del carrito (`pickupBusinesses`):
+  - **Tarjeta simulada (`card`):** solo en **modo demo**. Formulario con validación de formato y banner "Modo Demo: no se procesará ningún cargo real". En modo real esta tarjeta simulada **ya no aparece** (se quitó al conectar pasarelas reales).
+  - **Transferencia:** solo aparece si al menos un negocio del carrito tiene `bank_clabe` configurado (`businessesWithBank`). Muestra los datos bancarios **reales** del negocio (banco, titular, CLABE con botón de copiar). En modo demo usa `DEMO_BANK_DETAILS`.
+  - **Mercado Pago (`mercadopago`):** solo si **todas** las tiendas del carrito tienen `mp_public_key` (`pickupBusinesses.every(b => b.mp_public_key)`). Ver §9.5.
+  - **Tarjeta con Stripe (`stripe`):** solo si **todas** las tiendas del carrito tienen `stripe_charges_enabled = true`. Ver §9.5.
 - **Confirmación (`handleConfirm`):**
   - En demo (o sin usuario): genera un ID falso `ACAM-XXXXX`, limpia el carrito y va al Paso 5.
   - En real: primero **valida que cada item tenga `id` y `business_id` con formato UUID** (`UUID_RE`). Si hay un producto demo (ids como `"p1"`), muestra un toast pidiendo quitarlo y no continúa (no truena).
   - Agrupa el carrito por `business_id` (`byBusiness`) y llama al RPC `create_order_with_items` **una vez por negocio**, con sus items. Cada llamada guarda pedido + items atómicamente. Guarda el primer `order_id` para el seguimiento.
+  - Con `mercadopago` o `stripe`, si el carrito tiene productos de **más de una tienda**, se bloquea con un toast (una preferencia/sesión solo cobra a nombre de un vendedor); hay que hacer un pedido por tienda. Tras guardar el pedido, se llama a la ruta de la pasarela y se redirige (`window.location.href`) a `init_point` (Mercado Pago) o `url` (Stripe). Si la pasarela falla, el pedido ya quedó guardado y se avisa al comprador.
   - Si un usuario real no está logueado, `useEffect` lo redirige a `/login?redirect_url=/checkout`.
+
+### 9.5 Pagos con tarjeta reales, por tienda (Mercado Pago y Stripe Connect)
+
+**Requisito de negocio:** el dinero de cada venta debe caer **directo en la cuenta de la tienda vendedora**, nunca en una cuenta central de AcambaGo. Por eso ambas pasarelas se conectan **por negocio** y cada cobro usa la cuenta del vendedor dueño del pedido. La plataforma no es intermediaria del dinero.
+
+**Mercado Pago (Checkout Pro):**
+- Cada tienda guarda sus propias `mp_public_key`/`mp_access_token` en Ajustes (§10.7).
+- `POST /api/mercadopago/create-preference` recibe `{ orderId }`, verifica que el pedido sea del usuario, busca el `mp_access_token` **del negocio dueño del pedido** y con ese token crea la preferencia. En la `notification_url` embebe `?business_id=<id>`. Guarda `mp_preference_id` y devuelve `init_point`.
+- `POST /api/mercadopago/webhook?business_id=<id>` (server-to-server, sin sesión): lee `business_id` del query, recupera el token de ese negocio, **vuelve a consultar el pago con la API** (no confía en el body), mapea `approved→pagado` / `rejected→fallido` y actualiza `orders.payment_status`/`mp_payment_id`.
+
+**Stripe Connect (destination charges):**
+- La cuenta de AcambaGo es la **plataforma** (`STRIPE_SECRET_KEY`, cliente en `src/lib/stripe/server.ts`). Cada tienda tiene su cuenta conectada **Express** propia.
+- `POST /api/stripe/connect`: crea (si no existe) la cuenta Express del negocio del vendedor (`type: "express"`, `country: "MX"`, capacidades `card_payments` + `transfers`), guarda `stripe_account_id` y devuelve un Account Link de onboarding hospedado por Stripe. `GET /api/stripe/connect`: consulta `charges_enabled` de la cuenta y sincroniza `stripe_charges_enabled`.
+- `POST /api/stripe/create-checkout-session` recibe `{ orderId }` y crea una Checkout Session en modo `payment` con `payment_intent_data.transfer_data.destination = <stripe_account_id del negocio>`: es un **destination charge**, el dinero se transfiere a la cuenta del vendedor. Guarda `order_id` en la metadata del PaymentIntent y `stripe_payment_intent_id` en el pedido; devuelve `url`.
+- `POST /api/stripe/webhook`: verifica la firma con `STRIPE_WEBHOOK_SECRET`, escucha `payment_intent.succeeded`/`payment_intent.payment_failed`, lee `order_id` de la metadata y actualiza `orders.payment_status`/`stripe_payment_intent_id`. Registrado en el dashboard con ámbito "Tu cuenta" (el PaymentIntent nace en la plataforma).
+
+> **Nota operativa Stripe (v1):** el código usa la API v1 (Express accounts + Account Links). Stripe ya no la permite por defecto en cuentas nuevas; hubo que activar "Accounts v1 support" en el dashboard (Configuración → Funciones de la cuenta).
 
 ### 9.3 RPC `create_order_with_items`
 Función PL/pgSQL que inserta el `order` y luego, en la misma transacción, todos los `order_items` desde un `jsonb_array`. Devuelve el `order_id`. Razón de existir (documentada en `orders-rpc.sql`): antes se hacían dos inserts sueltos; si el segundo fallaba (p. ej. producto demo con id no-UUID), quedaba un pedido sin productos y Realtime notificaba a medias. Con el RPC, o se guarda todo o nada.
@@ -290,6 +316,8 @@ CRUD real. Formulario modal con galería de **hasta 6 fotos** (`MAX_IMAGES = 6`)
 - Datos generales (nombre, descripción, categoría, dirección, WhatsApp, foto → bucket `business-images`).
 - **Ubicación:** botón "Usar mi ubicación actual" que pide geolocalización al navegador (`navigator.geolocation.getCurrentPosition`) y llena `latitude/longitude`. Queda una opción manual escondida en un `<details>`. Default: 20.0319, -100.7273 (Acámbaro).
 - **Datos bancarios (opcional):** `bank_name`, `bank_holder`, `bank_clabe`. Si se llenan, habilitan "Transferencia" en el checkout.
+- **Mercado Pago (opcional):** sección donde el vendedor pega su propia `mp_public_key` y `mp_access_token` (Access Token como campo password). Habilita "Mercado Pago" en el checkout de su tienda.
+- **Stripe (opcional):** botón "Conectar con Stripe" que llama a `POST /api/stripe/connect` y redirige al onboarding de Stripe. Al volver con `?stripe_return=1` re-consulta `GET /api/stripe/connect` y, si `chargesEnabled`, muestra "Stripe conectado y listo para recibir pagos". Si el negocio aún es nuevo, pide registrarlo primero.
 - Si el negocio es nuevo, primero hace `upsert` del profile con rol `business` y crea el negocio con `is_approved = false`.
 
 ---
@@ -313,6 +341,11 @@ En modo demo usa una lista fija de usuarios y `DEMO_BUSINESSES`, sin acciones re
 | `/api/businesses` | POST | Crea un negocio (requiere `auth()` de Clerk). Inserta con `is_approved = false` y actualiza el rol del profile a `business` |
 | `/api/coupons/validate` | POST | Valida y canjea un cupón. Verifica que quien escanea es dueño del negocio (`owner_id = userId`), valida el cupón (`isCouponValid`), evita doble canje por usuario, registra la redención e incrementa `used_count` |
 | `/api/reviews` | POST | Inserta una reseña (`user_id = userId` de Clerk). Maneja el error `23505` (ya dejó reseña) con 409 |
+| `/api/mercadopago/create-preference` | POST | Crea la preferencia de Checkout Pro con el `mp_access_token` **del negocio dueño del pedido**. Devuelve `init_point`. Ver §9.5 |
+| `/api/mercadopago/webhook` | POST | Server-to-server. Lee `business_id` del query, re-consulta el pago con la API y actualiza `payment_status`/`mp_payment_id`. Ver §9.5 |
+| `/api/stripe/connect` | POST / GET | POST: crea la cuenta Express del negocio y devuelve el Account Link de onboarding. GET: consulta `charges_enabled` y sincroniza `stripe_charges_enabled`. Ver §9.5 |
+| `/api/stripe/create-checkout-session` | POST | Crea la Checkout Session con `transfer_data.destination` a la cuenta del negocio (destination charge). Devuelve `url`. Ver §9.5 |
+| `/api/stripe/webhook` | POST | Verifica la firma (`STRIPE_WEBHOOK_SECRET`), escucha `payment_intent.succeeded`/`payment_intent.payment_failed` y actualiza `payment_status`/`stripe_payment_intent_id`. Ver §9.5 |
 | `/api/auth/callback` | GET | **Heredado de Supabase Auth** (`exchangeCodeForSession`). Con Clerk ya no forma parte del flujo real; ver nota abajo |
 
 > **Nota sobre código heredado:** `api/auth/callback/route.ts` y `lib/supabase/middleware.ts` provienen de la etapa con Supabase Auth. Con Clerk el login no pasa por ahí. Se dejaron en el repo pero no son parte del flujo activo. Al documentar o refactorizar, trátalos como legado.
@@ -343,7 +376,7 @@ En modo demo usa una lista fija de usuarios y `DEMO_BUSINESSES`, sin acciones re
 
 ## 16. Pendientes / no incluido (verificado en código)
 
-- **Pagos reales:** tarjeta siempre simulada; transferencia sin `bank_clabe` no se ofrece. No hay Stripe/Mercado Pago.
+- **Pagos reales:** ya hay tarjeta real vía **Mercado Pago** y **Stripe Connect**, conectados por tienda (§9.5). La tarjeta *simulada* solo queda en modo demo. Pendiente: reflejar `payment_status` en la UI del vendedor/comprador y manejar reembolsos.
 - **Notificaciones al comprador** (WhatsApp/email) cuando cambia el estado de su pedido: no existen. Solo hay notificación en vivo al vendedor.
 - **Seguimiento real:** la página de tracking es una animación demo; no lee el estado real del pedido.
 - **Clerk en modo desarrollo:** banner y límites; pasar a producción requiere dominio propio verificado.

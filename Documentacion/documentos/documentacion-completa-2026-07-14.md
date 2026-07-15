@@ -96,10 +96,10 @@ Piezas notables:
 ## 7. Pedidos
 
 - Carrito en memoria (`CartProvider`), sin persistencia.
-- Checkout de 5 pasos (`checkout/page.tsx`): resumen + teléfono, entrega (pickup/meeting/home), pago (cash/card/transfer/cod), confirmación, éxito.
+- Checkout de 5 pasos (`checkout/page.tsx`): resumen + teléfono, entrega (pickup/meeting/home), pago (cash/card/transfer/cod/mercadopago/stripe), confirmación, éxito.
 - Confirmación real: valida que los productos tengan UUID (rechaza demos con toast), agrupa por negocio y llama `create_order_with_items` por negocio.
 - Vendedor recibe pedidos en vivo (Realtime) con beep (Web Audio API) y toast; puede marcar estados y contactar por WhatsApp.
-- Pago con tarjeta simulado; transferencia solo si el negocio tiene CLABE.
+- Pago con tarjeta **real por tienda** vía Mercado Pago y Stripe Connect (agregado en la sesión de la tarde del 2026-07-14; ver `sesiones/sesiones.md`): cada negocio conecta sus credenciales y el dinero cae directo en su cuenta. La tarjeta simulada solo queda en modo demo. Transferencia solo si el negocio tiene CLABE.
 - Página de seguimiento con timeline animado (demostrativo).
 
 ---
@@ -120,7 +120,7 @@ Piezas notables:
 | Supabase | Proyecto real, esquema completo aplicado |
 | Vercel | Desplegado y funcionando |
 | GitHub | Privado; puede estar **detrás** de producción (deploys por CLI, no git) |
-| Pagos | Simulados (tarjeta) / transferencia manual (CLABE real) |
+| Pagos | Tarjeta real por tienda (Mercado Pago + Stripe Connect, sesión de la tarde) / transferencia manual (CLABE real). Simulada solo en demo |
 | Notificaciones al comprador | No existen |
 | Seguimiento real de pedido | No (animación demo) |
 | Código Supabase Auth heredado | Presente sin uso (`api/auth/callback`, `lib/supabase/middleware.ts`) |

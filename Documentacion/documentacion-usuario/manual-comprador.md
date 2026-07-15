@@ -57,11 +57,17 @@ Elige cómo quieres recibir tu pedido:
 - **Domicilio:** llenas tu dirección completa (calle, referencias, colonia, código postal, ciudad, teléfono). Tiene un costo de envío adicional.
 
 ### Paso 3 — Pago
-Puedes elegir:
+Las opciones que ves dependen de lo que cada tienda haya configurado. Puedes elegir entre:
 - **Efectivo** (pagas al recibir; puedes indicar con cuánto pagarás para calcular tu cambio).
-- **Tarjeta** (crédito o débito). **Es una simulación**: la app lo indica claramente, no se procesa ningún cargo real todavía porque no hay una pasarela de pago conectada.
 - **Transferencia (SPEI/CLABE):** esta opción **solo aparece si la tienda de tu carrito tiene una cuenta bancaria real configurada**. Si aparece, verás el banco, el titular y la CLABE reales del negocio, con un botón para copiarla. Si la tienda no tiene cuenta configurada, esta opción simplemente no se muestra.
+- **Tarjeta con Mercado Pago:** aparece si la tienda conectó Mercado Pago. Te permite pagar con tarjeta, OXXO o SPEI. Ver más abajo qué pasa al elegirla.
+- **Tarjeta con Stripe:** aparece si la tienda conectó Stripe. Es un pago seguro con tarjeta de crédito o débito.
 - **Contra entrega** (pagas cuando te lo entreguen).
+
+**¿Qué pasa si pagas con tarjeta (Mercado Pago o Stripe)?**
+Al confirmar tu pedido, Acom-Di **primero guarda tu pedido** y luego te **redirige a la página de pago** de Mercado Pago o de Stripe, donde capturas los datos de tu tarjeta en un entorno seguro de la pasarela (Acom-Di nunca ve tu número de tarjeta). Cuando terminas, el cobro se confirma y el dinero le llega **directo a la tienda vendedora**, no a Acom-Di. Si por algo no puedes completar el pago, tu pedido ya quedó registrado y puedes contactar a la tienda.
+
+> Con tarjeta (Mercado Pago o Stripe) solo puedes pagar productos de **una tienda a la vez**. Si tu carrito tiene productos de varias tiendas y eliges tarjeta, la app te pedirá hacer un pedido por separado para cada una. Con efectivo, transferencia o contra entrega no hay ese límite.
 
 ### Paso 4 — Confirmación
 Revisas todo el resumen (productos, entrega, pago, notas y total) y presionas **"Confirmar Pedido"**.
@@ -113,7 +119,7 @@ Son las tiendas de demostración de Acom-Di, que conviven con las tiendas reales
 Porque esa tienda todavía no registró una cuenta bancaria en Acom-Di. Solo aparece cuando el vendedor la configura.
 
 **¿Me van a cobrar de verdad si pago con tarjeta?**
-No. Por ahora el pago con tarjeta es una simulación, la app te lo avisa antes de confirmar.
+Sí, si la tienda tiene Mercado Pago o Stripe conectado: te llevamos a la página segura de la pasarela para completar el pago y el dinero le llega directo a la tienda, no a Acom-Di. Solo las tiendas que lo hayan configurado muestran la opción de tarjeta; en las demás verás efectivo, transferencia o contra entrega.
 
 **¿Puedo comprar productos de varias tiendas en un solo pedido?**
 Sí, pero Acom-Di los separa en un pedido por tienda para que cada negocio reciba y prepare solo lo suyo.

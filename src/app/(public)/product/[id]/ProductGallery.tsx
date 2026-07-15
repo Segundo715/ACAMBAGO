@@ -18,13 +18,22 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
   return (
     <div className="space-y-3">
       <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-        <Image
-          src={images[selected]}
-          alt={`${name} - imagen ${selected + 1}`}
-          fill
-          className="object-cover transition-opacity duration-200"
-          priority
-        />
+        <div
+          className="flex h-full transition-transform duration-700 ease-in-out"
+          style={{ transform: `translateX(-${selected * 100}%)` }}
+        >
+          {images.map((img, i) => (
+            <div key={i} className="relative w-full h-full flex-shrink-0">
+              <Image
+                src={img}
+                alt={`${name} - imagen ${i + 1}`}
+                fill
+                className="object-cover"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
         {images.length > 1 && (
           <>
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">

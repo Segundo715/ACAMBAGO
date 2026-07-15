@@ -1,6 +1,6 @@
 # Índice de Documentación — AcambaGo (marca "Acom-Di")
 
-> Última actualización: 2026-07-14 (tarde: pagos con tarjeta vía Mercado Pago y Stripe Connect, por tienda)
+> Última actualización: 2026-07-15 (fix de RLS reactivado por accidente + galería de fotos de producto con deslizamiento automático)
 > Marketplace local de Acámbaro, Guanajuato. Auth con Clerk, base de datos en Supabase, deploy en Vercel.
 
 ---

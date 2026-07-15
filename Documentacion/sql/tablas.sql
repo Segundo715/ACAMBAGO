@@ -13,10 +13,14 @@
 --   6. supabase/payments-gateway.sql          (payment_status y campos de Mercado Pago en orders)
 --   7. supabase/payments-per-business.sql     (mp_public_key / mp_access_token en businesses)
 --   8. supabase/stripe-connect.sql            (Stripe Connect por negocio + stripe_payment_intent_id)
+--   9. supabase/fix-rls-disabled.sql          (re-aplicar si RLS se reactiva por accidente)
 --
 -- IMPORTANTE: el proyecto usa Clerk para autenticacion, NO Supabase Auth.
 -- Por eso RLS esta DESHABILITADO en todas las tablas: la seguridad se valida
--- en las rutas de la API y en el codigo del servidor, no en Postgres.
+-- en las rutas de la API y en el codigo del servidor, no en Postgres. Si RLS
+-- se reactiva (por ejemplo al aceptar una sugerencia del Security Advisor de
+-- Supabase), la llave anon deja de poder leer NINGUNA fila sin dar error
+-- visible (solo arreglos vacios) -- correr fix-rls-disabled.sql lo corrige.
 -- Los IDs de usuario (profiles.id, businesses.owner_id, reviews.user_id,
 -- orders.user_id, coupon_redemptions.user_id) son TEXT con formato "user_xxx"
 -- de Clerk, no UUID.

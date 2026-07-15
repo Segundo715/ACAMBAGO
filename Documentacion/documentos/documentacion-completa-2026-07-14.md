@@ -51,7 +51,7 @@ Sin scripts de seed ni de migración en `package.json` (a diferencia de otros pr
 - `(auth)/register`: selector Comprador/Vendedor que guarda `pending_role` en `localStorage` y manda a `/signup`.
 - `onboarding/page.tsx`: crea el `profile` con el rol elegido (`upsert`) y redirige según rol.
 - `src/proxy.ts`: `clerkMiddleware` protege `/dashboard`, `/admin`, `/perfil`; respeta la cookie `demo_mode` (bypass para cuentas demo).
-- **RLS deshabilitado en toda la base**: la autorización vive en el código (rutas de API con `auth()`, consultas filtradas por dueño). IDs de usuario en formato `user_xxx` de Clerk (columnas TEXT).
+- **RLS deshabilitado en toda la base**: la autorización vive en el código (rutas de API con `auth()`, consultas filtradas por dueño). IDs de usuario en formato `user_xxx` de Clerk (columnas TEXT). ⚠️ El 2026-07-15 se encontró RLS reactivado por accidente en las 8 tablas (probablemente por el Security Advisor de Supabase), lo que bloqueó todas las lecturas del navegador; se corrigió con `supabase/fix-rls-disabled.sql`. Si el sitio solo muestra datos demo o un vendedor deja de ver su negocio, sospechar de esto primero.
 
 ---
 
@@ -89,7 +89,7 @@ Piezas notables:
 
 - **`ProductsReel`**: auto-scroll infinito con `animate-reel` (40s, definido en `tailwind.config.ts`), pausa en hover; cada card con Link invisible + botón "Agregar". En home y en el perfil de cada negocio.
 - **`MiniCarousel`**: fotos que avanzan solas cada 2.5s, flechas siempre visibles, puntos y contador. Usado en `DemoBusinessPage.tsx`.
-- **`ProductGallery`**: galería con miniaturas en la página de producto.
+- **`ProductGallery`**: galería con miniaturas en la página de producto; avanza sola cada 2.5s y desliza entre fotos (`translateX` + `transition`), sin flechas — actualizado 2026-07-15.
 
 ---
 

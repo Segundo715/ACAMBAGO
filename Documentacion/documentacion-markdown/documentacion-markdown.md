@@ -231,7 +231,7 @@ Carrusel horizontal de auto-scroll. Duplica los items (`[...items, ...items]`) y
 Carrusel de fotos de un producto: avanza solo cada 2.5s (`setInterval`), tiene flechas siempre visibles (pensadas para móvil/touch), contador `n/total` y puntos. Se usa dentro de **`DemoBusinessPage.tsx`** (las páginas de tienda demo), no en la `BusinessCard` real.
 
 ### 8.3 ProductGallery
-En la página de detalle de producto (`product/[id]/ProductGallery.tsx`): galería principal con miniaturas. Las imágenes salen de `DEMO_PRODUCT_EXTRAS[id].images` o de `product.image_urls`/`image_url`, con un fallback de Unsplash.
+En la página de detalle de producto (`product/[id]/ProductGallery.tsx`): imagen principal + miniaturas. Las imágenes salen de `DEMO_PRODUCT_EXTRAS[id].images` o de `product.image_urls`/`image_url`, con un fallback de Unsplash. Avanza sola cada 2.5s (mismo patrón que `MiniCarousel`), pero **sin flechas**: el cambio entre fotos es un deslizamiento continuo (`transform: translateX(...)` con `transition`, un `<div>` en `flex` con todas las imágenes en fila), no un corte de golpe. La navegación manual queda solo en los puntos indicadores y las miniaturas de abajo (clic en cualquiera cambia `selected` directamente).
 
 ---
 

@@ -68,6 +68,8 @@ Todos los archivos viven en `supabase/`. Si se recrea la base desde cero, correr
 El **estado final consolidado** (sin historial de migraciones) está en [`sql/tablas.sql`](../sql/tablas.sql), listo como referencia de "cómo están las tablas hoy".
 
 > **Por qué RLS está apagado:** el proyecto usa Clerk, no Supabase Auth. `auth.uid()` no existe en este contexto, así que las políticas RLS originales no aplicarían. La seguridad se hace en el código: las rutas de API validan con `auth()` de Clerk y las consultas del servidor filtran por `owner_id`/`user_id`.
+>
+> **⚠️ Riesgo conocido (ocurrió el 2026-07-15):** si alguien acepta una sugerencia del "Security Advisor" de Supabase para "activar RLS", vuelve a bloquear TODAS las lecturas del navegador (la llave anon deja de ver cualquier fila, sin error visible, solo arreglos vacíos). Si el sitio empieza a mostrar solo datos demo, o un vendedor deja de ver su propio negocio, correr de nuevo `supabase/fix-rls-disabled.sql` antes de sospechar de otra cosa.
 
 ---
 
@@ -93,7 +95,7 @@ El **estado final consolidado** (sin historial de migraciones) está en [`sql/ta
 
 ### 4.4 Productos y galerías
 - CRUD en `dashboard/business/products/page.tsx`: sube hasta 6 fotos al bucket `product-images`; `image_urls` es el arreglo, `image_url` la portada.
-- `ProductsReel` (auto-scroll, `animate-reel` en `tailwind.config.ts`), `MiniCarousel` (avance 2.5s, en `DemoBusinessPage`), `ProductGallery` (detalle de producto).
+- `ProductsReel` (auto-scroll, `animate-reel` en `tailwind.config.ts`), `MiniCarousel` (avance 2.5s, en `DemoBusinessPage`), `ProductGallery` (detalle de producto: avanza sola cada 2.5s con deslizamiento `translateX`, sin flechas — actualizado 2026-07-15).
 
 ### 4.5 Cupones QR
 - Crear: `generateCouponCode()` → `ACAM-XXXXXX` (nanoid, alfabeto sin caracteres ambiguos). `qr_data = JSON.stringify({ coupon_code, business_id })`.

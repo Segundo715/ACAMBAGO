@@ -62,7 +62,7 @@ Formatos aceptados: JPG y PNG, hasta 5 MB por foto.
 
 Para **editar** un producto ya existente, presiona **Editar** en su tarjeta; para **eliminarlo**, presiona **Eliminar** (te pedirá confirmación).
 
-Si tu tienda tiene más de una foto por producto, en tu perfil público los clientes verán un pequeño carrusel que avanza solo cada pocos segundos, con flechas para moverse manualmente.
+Si tu tienda tiene más de una foto por producto, en tu perfil público los clientes verán un pequeño carrusel que avanza solo cada pocos segundos, con flechas para moverse manualmente. Al entrar al detalle de ese producto, las fotos también avanzan solas (deslizándose entre sí), pero ahí sin flechas: el cliente solo puede moverse con los puntos o las miniaturas de abajo.
 
 ---
 

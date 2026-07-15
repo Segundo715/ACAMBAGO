@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [selected, setSelected] = useState(0);
+
+  // Movimiento automático, igual que el carrusel de "Productos".
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setSelected((s) => (s + 1) % images.length);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [images.length]);
 
   const prev = () => setSelected((s) => (s - 1 + images.length) % images.length);
   const next = () => setSelected((s) => (s + 1) % images.length);

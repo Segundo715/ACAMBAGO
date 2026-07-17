@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Tag } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import AddToCartButton from "./AddToCartButton";
+import FavoriteButton from "./FavoriteButton";
 
 interface ReelItem {
   id: string;
@@ -39,6 +40,7 @@ function ReelCard({ item }: { item: ReelItem }) {
             <Tag className="w-3 h-3" />{item.business_category}
           </span>
         </div>
+        <FavoriteButton productId={item.id} />
       </div>
 
       <div className="p-4">

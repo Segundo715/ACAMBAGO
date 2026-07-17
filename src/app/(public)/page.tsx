@@ -33,7 +33,42 @@ async function getBusinesses(category?: string, search?: string): Promise<Busine
   } catch { return []; }
 }
 
-const FEATURED = [
+interface ReelItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  business_id: string;
+  business_name: string;
+  business_category: string;
+}
+
+async function getFeaturedProducts(): Promise<ReelItem[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (!url || url.includes("your-project") || url === "https://placeholder.supabase.co") return [];
+  try {
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("get_featured_products", { p_limit: 15 });
+    return ((data ?? []) as {
+      id: string; name: string; price: number; image_url: string | null;
+      business_id: string; business_name: string; business_category: string;
+    }[]).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: Number(p.price),
+      image: p.image_url ?? "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80",
+      business_id: p.business_id,
+      business_name: p.business_name,
+      business_category: p.business_category,
+    }));
+  } catch { return []; }
+}
+
+// DEMO_FEATURED es un respaldo solo para cuando no hay credenciales reales
+// de Supabase configuradas (modo demo puro); con credenciales reales,
+// "Productos Destacados" siempre sale de getFeaturedProducts().
+const DEMO_FEATURED = [
   { ...DEMO_PRODUCTS[0],        business_name: "Ferretería Acámbaro",     business_category: "Ferretería",   image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80" },
   { ...DEMO_PRODUCTS_ROPA[0],   business_name: "Boutique Acámbaro",       business_category: "Tienda de ropa", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80" },
   { ...DEMO_PRODUCTS_ELECTRONICA[0], business_name: "TechStore Acámbaro", business_category: "Electrónica", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80" },
@@ -67,6 +102,8 @@ export default async function HomePage({
 }) {
   const params = await searchParams;
   const supabaseBusinesses = await getBusinesses(params.category, params.q);
+  const realFeatured = await getFeaturedProducts();
+  const featured = realFeatured.length > 0 ? realFeatured : DEMO_FEATURED;
   const query = params.q?.toLowerCase() ?? "";
   const cat = params.category ?? "";
 
@@ -194,7 +231,7 @@ export default async function HomePage({
                 </Link>
               </div>
             </div>
-            <ProductsReel items={FEATURED} />
+            <ProductsReel items={featured} />
           </section>
 
           {/* ── Explorar por Categoría ── */}

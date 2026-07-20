@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Star, MessageSquare, User, Search } from "lucide-react";
 import { DEMO_ALL_REVIEWS } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase/client";
+import { Review } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const STAR_FILTERS = [0, 5, 4, 3, 2, 1] as const;
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
 
 function StarBar({ count, total }: { count: number; total: number }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -18,10 +24,34 @@ function StarBar({ count, total }: { count: number; total: number }) {
 }
 
 export default function ReviewsPage() {
+  const { user, isLoaded } = useUser();
   const [starFilter, setStarFilter] = useState(0);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(!IS_DEMO);
+  const [realReviews, setRealReviews] = useState<Review[]>([]);
+  const supabase = createClient();
 
-  const allReviews = DEMO_ALL_REVIEWS.slice(0, 40);
+  useEffect(() => {
+    if (IS_DEMO) return;
+    if (!isLoaded || !user) return;
+
+    const load = async () => {
+      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      if (!biz) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from("reviews")
+        .select("*, profiles(name)")
+        .eq("business_id", biz.id)
+        .order("created_at", { ascending: false });
+
+      setRealReviews((data ?? []) as unknown as Review[]);
+      setLoading(false);
+    };
+    load();
+  }, [isLoaded, user?.id]);
+
+  const allReviews = IS_DEMO ? DEMO_ALL_REVIEWS.slice(0, 40) : realReviews;
 
   const avgRating = allReviews.length
     ? allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length
@@ -37,6 +67,16 @@ export default function ReviewsPage() {
     const matchSearch = !search || (r.comment ?? "").toLowerCase().includes(search.toLowerCase());
     return matchStar && matchSearch;
   });
+
+  if (!IS_DEMO && loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 w-40 bg-slate-100 dark:bg-white/5 rounded-lg" />
+        <div className="h-40 bg-slate-100 dark:bg-white/5 rounded-2xl" />
+        <div className="h-24 bg-slate-100 dark:bg-white/5 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

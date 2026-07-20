@@ -11,11 +11,13 @@ import {
   TrendingUp, TrendingDown, ShoppingBag, Users,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
+import { Order } from "@/types";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
 
-const CHART_DATA = [
+const DEMO_CHART_DATA = [
   { label: "Lun", value: 1200 },
   { label: "Mar", value: 890 },
   { label: "Mié", value: 2100 },
@@ -24,21 +26,38 @@ const CHART_DATA = [
   { label: "Sáb", value: 1980 },
   { label: "Dom", value: 650 },
 ];
-const CHART_MAX = Math.max(...CHART_DATA.map((d) => d.value));
 
-const RECENT_ORDERS = [
-  { id: "ORD-001", customer: "María García", product: "Taladro 750W", total: 889, status: "pendiente", date: "Hoy 10:32" },
-  { id: "ORD-002", customer: "Carlos Ramírez", product: "Playera Casual", total: 189, status: "en_camino", date: "Ayer 17:15" },
-  { id: "ORD-003", customer: "Ana Martínez", product: "Kit Fumigador", total: 280, status: "entregado", date: "Ayer 14:02" },
-  { id: "ORD-004", customer: "Luisa Torres", product: "Taladro 750W x2", total: 1778, status: "pendiente", date: "26 Jun" },
+const DEMO_RECENT_ORDERS = [
+  { id: "ORD-001", customer: "María García", product: "Taladro 750W", total: 889, status: "pendiente" as const, date: "Hoy 10:32" },
+  { id: "ORD-002", customer: "Carlos Ramírez", product: "Playera Casual", total: 189, status: "en_camino" as const, date: "Ayer 17:15" },
+  { id: "ORD-003", customer: "Ana Martínez", product: "Kit Fumigador", total: 280, status: "entregado" as const, date: "Ayer 14:02" },
+  { id: "ORD-004", customer: "Luisa Torres", product: "Taladro 750W x2", total: 1778, status: "pendiente" as const, date: "26 Jun" },
 ];
 
-const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  pendiente:  { label: "Pendiente",  cls: "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400" },
-  en_camino:  { label: "En camino",  cls: "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" },
-  entregado:  { label: "Entregado",  cls: "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400" },
-  cancelado:  { label: "Cancelado",  cls: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400" },
-};
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function dayBounds(d: Date) {
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return [start, start + 24 * 60 * 60 * 1000] as const;
+}
+
+function formatOrderDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const [todayStart] = dayBounds(now);
+  const [dayStart] = dayBounds(d);
+  const time = d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  if (dayStart === todayStart) return `Hoy ${time}`;
+  if (todayStart - dayStart === 24 * 60 * 60 * 1000) return `Ayer ${time}`;
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+}
+
+function orderProductSummary(o: Order) {
+  const items = o.order_items ?? [];
+  if (items.length === 0) return "Pedido";
+  if (items.length === 1) return `${items[0].name}${items[0].quantity > 1 ? ` x${items[0].quantity}` : ""}`;
+  return `${items[0].name} y ${items.length - 1} más`;
+}
 
 interface Stats {
   products: number;
@@ -54,6 +73,7 @@ export default function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [business, setBusiness] = useState<any>(IS_DEMO ? DEMO_BUSINESS : null);
   const [stats, setStats] = useState<Stats>(DEMO_STATS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loaded, setLoaded] = useState(IS_DEMO);
   const [noBusiness, setNoBusiness] = useState(false);
   const supabase = createClient();
@@ -77,12 +97,16 @@ export default function DashboardPage() {
         { count: coupons },
         { count: reviews },
         { count: redemptions },
+        { data: bizOrders },
       ] = await Promise.all([
         supabase.from("products").select("*", { count: "exact", head: true }).eq("business_id", biz.id),
         supabase.from("coupons").select("*", { count: "exact", head: true }).eq("business_id", biz.id).eq("is_active", true),
         supabase.from("reviews").select("*", { count: "exact", head: true }).eq("business_id", biz.id),
         supabase.from("coupon_redemptions").select("*", { count: "exact", head: true }).eq("business_id", biz.id),
+        supabase.from("orders").select("*, order_items(*)").eq("business_id", biz.id).order("created_at", { ascending: false }),
       ]);
+
+      setOrders(((bizOrders ?? []) as Order[]).filter((o) => o.status !== "cancelado"));
 
       setStats({
         products: products ?? 0, coupons: coupons ?? 0,
@@ -127,12 +151,33 @@ export default function DashboardPage() {
     );
   }
 
+  const now = new Date();
+  const [todayStart] = dayBounds(now);
+  const todayRevenue = IS_DEMO ? 2340 : orders.filter((o) => new Date(o.created_at).getTime() >= todayStart).reduce((s, o) => s + o.total, 0);
+  const pendingCount = IS_DEMO ? 3 : orders.filter((o) => o.status === "pendiente").length;
+
+  const weekChart = IS_DEMO ? DEMO_CHART_DATA : Array.from({ length: 7 }, (_, i) => {
+    const offset = 6 - i;
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const [start, end] = dayBounds(d);
+    const value = orders
+      .filter((o) => { const t = new Date(o.created_at).getTime(); return t >= start && t < end; })
+      .reduce((s, o) => s + o.total, 0);
+    return { label: DAY_LABELS[d.getDay()], value };
+  });
+  const weekMax = Math.max(...weekChart.map((d) => d.value), 1);
+
+  const recentOrders = IS_DEMO ? DEMO_RECENT_ORDERS : orders.slice(0, 4).map((o) => ({
+    id: o.id, customer: o.customer_name, product: orderProductSummary(o),
+    total: o.total, status: o.status, date: formatOrderDate(o.created_at),
+  }));
+
   const kpis = [
     {
       label: "Ingresos hoy",
-      value: formatPrice(2340),
-      trend: "+12%",
-      up: true,
+      value: formatPrice(todayRevenue),
+      trend: IS_DEMO ? "+12%" : null,
+      up: IS_DEMO ? true : null,
       icon: TrendingUp,
       bg: "bg-green-50 dark:bg-green-500/10",
       text: "text-green-600 dark:text-green-400",
@@ -140,9 +185,9 @@ export default function DashboardPage() {
     },
     {
       label: "Pedidos pendientes",
-      value: "3",
-      trend: "+2",
-      up: true,
+      value: String(pendingCount),
+      trend: IS_DEMO ? "+2" : null,
+      up: IS_DEMO ? true : null,
       icon: ShoppingBag,
       bg: "bg-blue-50 dark:bg-blue-500/10",
       text: "text-blue-600 dark:text-blue-400",
@@ -233,14 +278,14 @@ export default function DashboardPage() {
           </div>
           {/* CSS bar chart */}
           <div className="flex items-end gap-2 h-36">
-            {CHART_DATA.map(({ label, value }) => (
-              <div key={label} className="flex-1 flex flex-col items-center gap-1.5">
+            {weekChart.map(({ label, value }, i) => (
+              <div key={`${label}-${i}`} className="flex-1 flex flex-col items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                   {formatPrice(value).replace("MXN", "").trim().replace("$", "$")}
                 </span>
                 <div
                   className="w-full bg-brand-500 dark:bg-brand-400 rounded-t-lg transition-all hover:bg-brand-600 dark:hover:bg-brand-300"
-                  style={{ height: `${Math.max(8, (value / CHART_MAX) * 100)}%` }}
+                  style={{ height: `${Math.max(8, (value / weekMax) * 100)}%` }}
                 />
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">{label}</span>
               </div>
@@ -249,7 +294,7 @@ export default function DashboardPage() {
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/10 flex items-center justify-between text-xs text-slate-400">
             <span>Total semana</span>
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {formatPrice(CHART_DATA.reduce((s, d) => s + d.value, 0))}
+              {formatPrice(weekChart.reduce((s, d) => s + d.value, 0))}
             </span>
           </div>
         </div>
@@ -289,25 +334,25 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-white/10">
-          {RECENT_ORDERS.map((o) => {
-            const s = STATUS_MAP[o.status];
-            return (
+          {recentOrders.length === 0 && (
+            <p className="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">Todavía no tienes pedidos.</p>
+          )}
+          {recentOrders.map((o) => (
               <div key={o.id} className="px-5 py-3.5 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{o.customer}</p>
-                    <span className="text-[10px] text-slate-400">#{o.id}</span>
+                    <span className="text-[10px] text-slate-400">#{o.id.slice(0, 8)}</span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{o.product}</p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>
+                  <OrderStatusBadge status={o.status} />
                   <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatPrice(o.total)}</span>
                   <span className="text-xs text-slate-400 hidden sm:block">{o.date}</span>
                 </div>
               </div>
-            );
-          })}
+          ))}
         </div>
       </div>
 

@@ -7,9 +7,14 @@ const isProtectedRoute = createRouteMatcher([
   "/perfil(.*)",
 ]);
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+
 export const proxy = clerkMiddleware(async (auth, req) => {
-  // Demo mode: cookies bypass auth on protected routes
-  const demoCookie = req.cookies.get("demo_mode")?.value;
+  // La cookie demo_mode solo debe saltarse la auth real cuando no hay Supabase
+  // configurado (modo demo). Con credenciales reales, nadie debe poder usar esta
+  // cookie para esquivar el login de Clerk en producción.
+  const demoCookie = IS_DEMO ? req.cookies.get("demo_mode")?.value : undefined;
   if (demoCookie === "buyer" || demoCookie === "seller") {
     // Block demo buyers from seller dashboard
     if (demoCookie === "buyer" && req.nextUrl.pathname.startsWith("/dashboard")) {

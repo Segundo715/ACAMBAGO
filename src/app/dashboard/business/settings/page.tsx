@@ -82,6 +82,14 @@ function SettingsContent() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    const mpPublicKey = business.mp_public_key?.trim() || "";
+    const mpAccessToken = business.mp_access_token?.trim() || "";
+    if ((mpPublicKey && !mpAccessToken) || (!mpPublicKey && mpAccessToken)) {
+      toast.error("Para usar Mercado Pago necesitas llenar Public Key y Access Token, los dos.");
+      return;
+    }
+
     setSaving(true);
 
     let image_url = business.image_url;
@@ -276,6 +284,9 @@ function SettingsContent() {
             <label className="label">Access Token</label>
             <input type="password" value={business.mp_access_token ?? ""} onChange={(e) => update("mp_access_token", e.target.value)} className="input" placeholder="APP_USR-..." />
           </div>
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            Usa tus llaves de <strong>producción</strong> (empiezan con <code>APP_USR-</code>). Las de prueba (<code>TEST-...</code>) no van a cobrar dinero real y AcambaGo no puede detectar la diferencia automáticamente.
+          </p>
         </div>
 
         <div className="card p-6 space-y-4">

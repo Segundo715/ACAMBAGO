@@ -25,6 +25,9 @@ Todos estos archivos viven en `supabase/` y ya fueron aplicados al proyecto de S
 3. `orders-schema.sql` — tablas `orders` y `order_items`, más la publicación de Realtime.
 4. `orders-rpc.sql` — función `create_order_with_items`, que guarda un pedido y sus productos en una sola transacción (ver "Sistema de pedidos" abajo).
 5. `products-gallery-and-bank.sql` — columna `image_urls TEXT[]` en `products` (galería de fotos) y columnas `bank_name`/`bank_holder`/`bank_clabe` en `businesses` (transferencia real).
+6. `payments-gateway.sql` — columnas `payment_status`, `mp_preference_id`, `mp_payment_id` en `orders` (pagos con Mercado Pago).
+7. `payments-per-business.sql` — columnas `mp_public_key`/`mp_access_token` en `businesses` (cada negocio cobra a su propia cuenta de Mercado Pago).
+8. `stripe-connect.sql` — columnas `stripe_account_id`/`stripe_charges_enabled` en `businesses` y `stripe_payment_intent_id` en `orders` (Stripe Connect).
 
 ## Sistema de pedidos
 
@@ -60,8 +63,23 @@ Sigue existiendo tal cual describía el CLAUDE.md original: sin credenciales de 
 
 `FEATURED_ROPA` existe en `demo-data.ts` (ropa/calzado de varias tiendas demo) pero ya no se usa en ningún lado tras los últimos cambios; se dejó exportado por si se vuelve a necesitar.
 
+## Pagos reales: Mercado Pago y Stripe
+
+A diferencia de lo que decía antes este documento, **Mercado Pago y Stripe Connect ya están conectados**, no son simulados:
+
+- **Mercado Pago** (`src/app/api/mercadopago/create-preference/route.ts`, `.../webhook/route.ts`): cada negocio guarda su propio `mp_public_key`/`mp_access_token` en `Dashboard → Ajustes` (tabla `businesses`, ver `supabase/payments-per-business.sql`). El cobro se procesa directo en la cuenta de Mercado Pago de ese negocio, no en una cuenta central de la plataforma. El webhook revalida el pago contra la API de Mercado Pago con ese mismo token en vez de confiar en el payload recibido.
+- **Stripe Connect** (`src/app/api/stripe/connect/route.ts`, `create-checkout-session/route.ts`, `webhook/route.ts`): el negocio conecta su cuenta desde Ajustes (botón "Conectar con Stripe", flujo de onboarding Express). Es un *destination charge*: Stripe cobra en la cuenta de la plataforma y transfiere a la cuenta conectada del negocio (`stripe_account_id`). El webhook sí valida firma con `STRIPE_WEBHOOK_SECRET`.
+- El checkout solo muestra cada método si el negocio tiene las credenciales configuradas (`mp_public_key` / `stripe_charges_enabled`), y solo permite un negocio por pedido con estas pasarelas (no soportan cobrar a varias tiendas en un solo pago).
+- **Tarjeta simulada** (`payment: "card"`) sigue existiendo solo en modo demo; transferencia bancaria manual sigue siendo real cuando el negocio tiene `bank_clabe` configurada.
+
 ## Pendiente / no incluido
 
-- **Pagos reales**: tarjeta y transferencia (cuando no hay `bank_clabe`) son simulados a propósito. Conectar Mercado Pago o Stripe requeriría una cuenta nueva, igual que se hizo con Clerk/Supabase.
-- **Notificaciones por WhatsApp/email** al comprador cuando cambia el estado de su pedido: no existen todavía, solo la notificación en vivo al vendedor.
+- **Validación de credenciales de Mercado Pago**: hoy se guardan como texto plano sin verificar que sean válidas ni si son de modo prueba (`TEST-...`) o producción (`APP_USR-...`); no hay ningún indicador de modo sandbox/live en la UI.
+- **Notificaciones por WhatsApp/email** al comprador cuando cambia el estado de su pedido: no existen. Sí hay notificación dentro de la app (ver abajo) y notificación en vivo al vendedor.
 - **Instancia de producción de Clerk**: sigue en modo desarrollo (banner "Development mode", límites de uso). Pasar a producción requiere dominio propio verificado en Clerk.
+
+## Notificaciones de pedido dentro de la app
+
+El comprador ve el estado real de sus pedidos (no demo) en `/perfil` (últimos 5) y `/perfil/pedidos` (lista completa), leyendo la tabla `orders` filtrada por su `user_id` de Clerk. Ambas páginas usan `OrderStatusBadge` (`src/components/ui/OrderStatusBadge.tsx`), el mismo componente que usa el panel del vendedor, para que el color/label de cada estado sea consistente en toda la app.
+
+`/perfil` se suscribe a Supabase Realtime (`UPDATE` en `orders`, filtrado por `user_id`) y muestra un toast cuando cambia el estado de cualquier pedido propio, sin recargar la página. `/checkout/tracking?order=<id>` hace lo mismo pero filtrado por el `id` de ese pedido específico, y deriva su timeline directo del `status` real en vez de simular el avance con un timer (el modo demo del tracking se conserva para pedidos no reales).

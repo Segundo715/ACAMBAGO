@@ -99,7 +99,7 @@ NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/onboarding
 NEXT_PUBLIC_APP_URL=
 ```
 
-Database schema lives in `supabase/*.sql` — run them in the order listed in `DOCUMENTACION.md` (`schema.sql` → `clerk-migration.sql` → `orders-schema.sql` → `orders-rpc.sql` → `products-gallery-and-bank.sql`).
+Database schema lives in `supabase/*.sql` — run them in the order listed in `DOCUMENTACION.md` (`schema.sql` → `clerk-migration.sql` → `orders-schema.sql` → `orders-rpc.sql` → `products-gallery-and-bank.sql` → `payments-gateway.sql` → `payments-per-business.sql` → `stripe-connect.sql`).
 
 ## Deployment
 

@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ShoppingBag, Phone, Check, Truck, Clock, X, Search, AlertTriangle } from "lucide-react";
+import { ShoppingBag, Phone, Check, Truck, Clock, Search, AlertTriangle } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Order, OrderStatus, PaymentMethod } from "@/types";
+import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -41,13 +42,6 @@ const DEMO_ORDERS: OrderRow[] = [
   { id: "ORD-006", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7", payment_method: "cash" },
   { id: "ORD-007", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55", payment_method: "card" },
 ];
-
-const STATUS_CONFIG = {
-  pendiente:  { label: "Pendiente",  icon: Clock,  textCls: "text-yellow-700 dark:text-yellow-400", bgCls: "bg-yellow-50 dark:bg-yellow-500/10", borderCls: "border-yellow-200 dark:border-yellow-500/20" },
-  en_camino:  { label: "En camino",  icon: Truck,  textCls: "text-blue-700 dark:text-blue-400",    bgCls: "bg-blue-50 dark:bg-blue-500/10",     borderCls: "border-blue-200 dark:border-blue-500/20" },
-  entregado:  { label: "Entregado",  icon: Check,  textCls: "text-green-700 dark:text-green-400",  bgCls: "bg-green-50 dark:bg-green-500/10",   borderCls: "border-green-200 dark:border-green-500/20" },
-  cancelado:  { label: "Cancelado",  icon: X,      textCls: "text-red-600 dark:text-red-400",      bgCls: "bg-red-50 dark:bg-red-500/10",       borderCls: "border-red-200 dark:border-red-500/20" },
-};
 
 const TABS = [
   { key: "todos",     label: "Todos" },
@@ -243,8 +237,6 @@ export default function OrdersPage() {
           </div>
         ) : (
           filtered.map((order) => {
-            const cfg = STATUS_CONFIG[order.status];
-            const StatusIcon = cfg.icon;
             const isOpen = expanded === order.id;
 
             return (
@@ -254,9 +246,7 @@ export default function OrdersPage() {
                   onClick={() => setExpanded(isOpen ? null : order.id)}
                   className="w-full px-5 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-left"
                 >
-                  <div className={`w-9 h-9 rounded-xl ${cfg.bgCls} border ${cfg.borderCls} flex items-center justify-center flex-shrink-0`}>
-                    <StatusIcon className={`w-4 h-4 ${cfg.textCls}`} />
-                  </div>
+                  <OrderStatusIcon status={order.status} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-slate-900 dark:text-white text-sm">{order.customer}</p>
@@ -265,9 +255,7 @@ export default function OrdersPage() {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{order.items.join(", ")}</p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`hidden sm:inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bgCls} ${cfg.textCls} border ${cfg.borderCls}`}>
-                      <StatusIcon className="w-3 h-3" /> {cfg.label}
-                    </span>
+                    <OrderStatusBadge status={order.status} className="hidden sm:inline-flex" />
                     <span className="text-sm font-bold text-slate-900 dark:text-white">{formatPrice(order.total)}</span>
                     <span className={`text-slate-300 dark:text-slate-600 transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
                   </div>

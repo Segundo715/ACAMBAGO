@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   User, Save, Ticket, Store, ArrowLeft, ShoppingBag,
-  Heart, Star, MapPin, ChevronRight, Package, Check,
-  Truck, Clock,
+  Heart, Star, MapPin, ChevronRight, Package,
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
+import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
+import { Order, OrderStatus } from "@/types";
 import {
   getDemoMode,
   DEMO_BUYER,
@@ -28,17 +29,20 @@ interface Redemption {
   coupons: { title: string; value: number; discount_type: string; businesses: { name: string } };
 }
 
+type BuyerOrder = Order & { businesses: { name: string } | null };
+
 const DEMO_MY_ORDERS = DEMO_BUYER_ORDERS;
 const DEMO_FAVORITES = DEMO_BUYER_FAVORITES;
 
-const ORDER_STATUS: Record<string, { label: string; icon: typeof Clock; cls: string }> = {
-  pendiente:  { label: "Pendiente",  icon: Clock,  cls: "text-yellow-600 bg-yellow-50 dark:bg-yellow-500/10 dark:text-yellow-400" },
-  en_camino:  { label: "En camino",  icon: Truck,  cls: "text-blue-600 bg-blue-50 dark:bg-blue-500/10 dark:text-blue-400" },
-  entregado:  { label: "Entregado",  icon: Check,  cls: "text-green-600 bg-green-50 dark:bg-green-500/10 dark:text-green-400" },
-};
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
+
+function orderItemsSummary(order: BuyerOrder) {
+  const items = order.order_items ?? [];
+  if (items.length === 0) return "Pedido";
+  if (items.length === 1) return items[0].name;
+  return `${items[0].name} y ${items.length - 1} más`;
+}
 
 export default function PerfilPage() {
   const { user, isLoaded } = useUser();
@@ -49,6 +53,8 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [editOpen, setEditOpen] = useState(false);
+  const [orders, setOrders] = useState<BuyerOrder[]>([]);
+  const [ordersCount, setOrdersCount] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -87,10 +93,40 @@ export default function PerfilPage() {
         .limit(10);
 
       setRedemptions((reds ?? []) as unknown as Redemption[]);
+
+      const { data: myOrders, count } = await supabase
+        .from("orders")
+        .select("*, order_items(*), businesses(name)", { count: "exact" })
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      setOrders((myOrders ?? []) as unknown as BuyerOrder[]);
+      setOrdersCount(count ?? 0);
       setLoading(false);
     };
     load();
   }, [isLoaded, user?.id]);
+
+  // Notificación en vivo: si el vendedor cambia el estado de un pedido, avisa sin recargar.
+  useEffect(() => {
+    if (IS_DEMO || !user) return;
+
+    const channel = supabase
+      .channel(`buyer-orders-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const updated = payload.new as Order;
+          setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+          toast.success(`Tu pedido cambió a "${updated.status.replace("_", " ")}"`, { icon: "📦" });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +205,7 @@ export default function PerfilPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: ShoppingBag, label: "Pedidos",   value: DEMO_MY_ORDERS.length, color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-blue-500/10" },
+          { icon: ShoppingBag, label: "Pedidos",   value: demoMode ? DEMO_MY_ORDERS.length : (IS_DEMO ? DEMO_MY_ORDERS.length : ordersCount), color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-blue-500/10" },
           { icon: Heart,       label: "Favoritos", value: DEMO_FAVORITES.length, color: "text-red-500 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/10" },
           { icon: Ticket,      label: "Cupones",   value: demoMode ? DEMO_BUYER_COUPONS.length : (IS_DEMO ? 2 : redemptions.length), color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
         ].map(({ icon: Icon, label, value, color, bg }) => (
@@ -189,17 +225,13 @@ export default function PerfilPage() {
           <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Package className="w-4 h-4 text-brand-500" /> Mis pedidos
           </h2>
-          <span className="text-xs text-slate-400">Demo</span>
+          {(demoMode || IS_DEMO) && <span className="text-xs text-slate-400">Demo</span>}
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-white/10">
-          {DEMO_MY_ORDERS.map((o) => {
-            const st = ORDER_STATUS[o.status];
-            const StatusIcon = st.icon;
-            return (
-              <div key={o.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${st.cls}`}>
-                  <StatusIcon className="w-4 h-4" />
-                </div>
+        {demoMode || IS_DEMO ? (
+          <div className="divide-y divide-slate-100 dark:divide-white/10">
+            {DEMO_MY_ORDERS.map((o) => (
+              <Link key={o.id} href={`/checkout/tracking?order=${o.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <OrderStatusIcon status={o.status as OrderStatus} className="w-8 h-8 rounded-xl" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{o.item}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
@@ -207,13 +239,36 @@ export default function PerfilPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                  <OrderStatusBadge status={o.status as OrderStatus} className="hidden sm:inline-flex" />
                   <span className="text-sm font-bold text-slate-900 dark:text-white">{formatPrice(o.total)}</span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              </Link>
+            ))}
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <Package className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Todavía no has hecho ningún pedido.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-white/10">
+            {orders.map((o) => (
+              <Link key={o.id} href={`/checkout/tracking?order=${o.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <OrderStatusIcon status={o.status} className="w-8 h-8 rounded-xl" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{orderItemsSummary(o)}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                    <Store className="w-3 h-3" /> {o.businesses?.name ?? "Negocio"} · {format(new Date(o.created_at), "dd MMM", { locale: es })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <OrderStatusBadge status={o.status} className="hidden sm:inline-flex" />
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{formatPrice(o.total)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Favorite stores */}
@@ -292,7 +347,7 @@ export default function PerfilPage() {
       {/* Account links */}
       <div className="card divide-y divide-slate-100 dark:divide-white/10 overflow-hidden">
         {[
-          { icon: ShoppingBag, label: "Ver todos los pedidos", href: "/coupons" },
+          { icon: ShoppingBag, label: "Ver todos los pedidos", href: "/perfil/pedidos" },
           { icon: Ticket,      label: "Explorar cupones",      href: "/coupons" },
           { icon: MapPin,      label: "Ver mapa de tiendas",   href: "/map" },
           { icon: Store,       label: "Todas las tiendas",     href: "/" },

@@ -2,6 +2,7 @@ import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "@/components/ui/ProductsReel";
 import SearchBar from "@/components/ui/SearchBar";
 import DragScroll from "@/components/ui/DragScroll";
+import CategoriesReel from "@/components/ui/CategoriesReel";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import {
   DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
@@ -248,20 +249,7 @@ export default async function HomePage({
                 <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Encuentra exactamente lo que buscas</p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {FEATURED_CATEGORIES.map((fc) => (
-                  <Link key={fc.name} href={`/?category=${encodeURIComponent(fc.name)}`}
-                    className="group card hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 dark:hover:bg-white/10 transition-all duration-200">
-                    <div className="p-4 pb-2">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors leading-tight block">{fc.name}</span>
-                      <span className="text-xs text-slate-500 dark:text-gray-500 mt-0.5 block">{fc.desc}</span>
-                    </div>
-                    <div className="relative h-28 overflow-hidden">
-                      <Image src={fc.image} alt={fc.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300 opacity-70 group-hover:opacity-90" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <CategoriesReel items={FEATURED_CATEGORIES} />
 
               <DragScroll className="flex gap-2 overflow-x-auto mt-6 pb-1">
                 {BUSINESS_CATEGORIES.filter((c) => !FEATURED_CATEGORIES.find((fc) => fc.name === c)).map((c) => (

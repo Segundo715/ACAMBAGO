@@ -19,12 +19,14 @@ export function useAuthUser(): AuthUser {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [demoMode, setDemoMode] = useState<"buyer" | "seller" | null>(null);
 
-  // Read demo cookie once on mount (client-only)
+  // Lee la cookie de demo, pero solo si no hay una sesion real de Clerk
+  // activa — una sesion real siempre gana sobre la cookie de demo.
   useEffect(() => {
-    const mode = getDemoMode();
+    if (!isLoaded) return;
+    const mode = user ? null : getDemoMode();
     setDemoMode(mode);
     if (mode) setProfileLoaded(true);
-  }, []);
+  }, [isLoaded, user]);
 
   useEffect(() => {
     if (demoMode) return;

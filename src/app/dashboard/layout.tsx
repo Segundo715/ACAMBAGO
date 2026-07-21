@@ -14,14 +14,16 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Demo seller bypasses role check (middleware already blocked demo buyer)
+  // Demo seller bypasses role check (middleware already blocked demo buyer),
+  // pero solo si no hay una sesion real de Clerk activa — si ya iniciaste
+  // sesion de verdad, la cookie de demo no debe tapar tu cuenta real.
   const cookieStore = await cookies();
-  const isDemoSeller = cookieStore.get("demo_mode")?.value === "seller";
+  const { userId } = await auth();
+  const isDemoSeller = !userId && cookieStore.get("demo_mode")?.value === "seller";
 
   let pendingApproval = false;
 
   if (!isDemoSeller && !IS_DEMO) {
-    const { userId } = await auth();
     if (!userId) redirect("/login");
 
     const { createClient } = await import("@/lib/supabase/server");

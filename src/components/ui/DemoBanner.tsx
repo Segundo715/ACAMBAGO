@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { FlaskConical, X } from "lucide-react";
 import { getDemoMode, stopDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
 
 export default function DemoBanner() {
+  const { user, isLoaded } = useUser();
   const [mode, setMode] = useState<"buyer" | "seller" | null>(null);
 
   useEffect(() => {
-    setMode(getDemoMode());
-  }, []);
+    // Con una sesion real de Clerk activa, la cookie de demo se ignora.
+    if (!isLoaded) return;
+    setMode(user ? null : getDemoMode());
+  }, [isLoaded, user]);
 
   if (!mode) return null;
 

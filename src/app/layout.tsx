@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import ThemeProvider from "@/components/ui/ThemeProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { esES } from "@clerk/localizations";
+import DemoModeGuard from "@/components/ui/DemoModeGuard";
 
 export const metadata: Metadata = {
   title: "Acom-Di - Revista de Acámbaro",
@@ -29,6 +30,7 @@ export default function RootLayout({
         </head>
         <body>
           <ThemeProvider>
+            <DemoModeGuard />
             {children}
             <Toaster
               position="top-right"

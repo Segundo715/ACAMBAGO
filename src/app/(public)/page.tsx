@@ -1,6 +1,7 @@
 import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "@/components/ui/ProductsReel";
 import SearchBar from "@/components/ui/SearchBar";
+import DragScroll from "@/components/ui/DragScroll";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import {
   DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
@@ -176,7 +177,7 @@ export default async function HomePage({
       {/* Filtros — solo vista filtrada */}
       {isFiltered && (
         <section className="max-w-7xl mx-auto px-4 pt-8 pb-2">
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <DragScroll className="flex gap-2 overflow-x-auto pb-2">
             <Link href="/" className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-all ${!cat ? "bg-brand-500 text-white border-brand-500" : "bg-white text-slate-600 border-slate-300 hover:border-brand-400 dark:bg-white/5 dark:text-gray-300 dark:border-white/20 dark:hover:border-brand-400"}`}>
               Todos
             </Link>
@@ -186,7 +187,7 @@ export default async function HomePage({
                 {c}
               </Link>
             ))}
-          </div>
+          </DragScroll>
         </section>
       )}
 
@@ -252,14 +253,14 @@ export default async function HomePage({
                 ))}
               </div>
 
-              <div className="flex gap-2 overflow-x-auto mt-6 pb-1">
+              <DragScroll className="flex gap-2 overflow-x-auto mt-6 pb-1">
                 {BUSINESS_CATEGORIES.filter((c) => !FEATURED_CATEGORIES.find((fc) => fc.name === c)).map((c) => (
                   <Link key={c} href={`/?category=${encodeURIComponent(c)}`}
                     className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:border-brand-400/50 hover:text-brand-600 dark:border-white/15 dark:bg-white/5 dark:text-gray-300 dark:hover:border-brand-400/50 dark:hover:text-brand-300 transition-all">
                     {c}
                   </Link>
                 ))}
-              </div>
+              </DragScroll>
             </div>
           </section>
 

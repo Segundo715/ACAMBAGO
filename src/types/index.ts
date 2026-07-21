@@ -135,6 +135,7 @@ export const BUSINESS_CATEGORIES = [
   "Papelería",
   "Electrónica",
   "Joyería",
+  "Accesorios",
   "Mueblería",
   "Abarrotes",
   "Cosméticos",

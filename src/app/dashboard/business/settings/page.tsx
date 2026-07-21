@@ -280,8 +280,8 @@ function SettingsContent() {
           <h2 className="font-semibold text-slate-900 dark:text-white">Mercado Pago (opcional)</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Si las llenas, tus clientes podrán pagarte con tarjeta, OXXO o SPEI directo en el checkout, y el dinero cae en tu propia cuenta de Mercado Pago, no en la de AcambaGo. Consigue tus llaves en{" "}
-            <a href="https://www.mercadopago.com.mx/developers/panel/credentials" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline">
-              mercadopago.com.mx/developers/panel/credentials
+            <a href="https://www.mercadopago.com.mx/developers/es/docs/your-integrations/credentials" target="_blank" rel="noopener noreferrer" className="text-brand-600 dark:text-brand-400 underline">
+              mercadopago.com.mx → Tus integraciones → Credenciales
             </a>.
           </p>
           <div>

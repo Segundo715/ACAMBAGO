@@ -1,5 +1,6 @@
 import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "@/components/ui/ProductsReel";
+import SearchBar from "@/components/ui/SearchBar";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import {
   DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
@@ -11,7 +12,7 @@ import {
 const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Search, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store } from "lucide-react";
+import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
@@ -27,7 +28,11 @@ async function getBusinesses(category?: string, search?: string): Promise<Busine
       .eq("is_approved", true).eq("is_active", true)
       .order("rating_avg", { ascending: false });
     if (category) query = query.eq("category", category);
-    if (search) query = query.ilike("name", `%${search}%`);
+    if (search) {
+      // Comas y paréntesis rompen la sintaxis de .or() de PostgREST, se limpian antes de armar el filtro.
+      const term = search.replace(/[,()]/g, " ").trim();
+      if (term) query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`);
+    }
     const { data } = await query.limit(24);
     return (data ?? []) as Business[];
   } catch { return []; }
@@ -109,7 +114,7 @@ export default async function HomePage({
 
   const filteredDemos = ALL_DEMO_BUSINESSES.filter((b) => {
     const matchesCat = !cat || b.category === cat;
-    const matchesQuery = !query || b.name.toLowerCase().includes(query) || b.description?.toLowerCase().includes(query);
+    const matchesQuery = !query || b.name.toLowerCase().includes(query) || b.description?.toLowerCase().includes(query) || b.category.toLowerCase().includes(query);
     return matchesCat && matchesQuery;
   });
 
@@ -145,17 +150,7 @@ export default async function HomePage({
             El marketplace de productos locales de Acámbaro. Encuentra lo que necesitas en tiendas de tu comunidad.
           </p>
 
-          <form method="GET" className="max-w-xl mx-auto mb-8">
-            <div className="flex gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 shadow-xl">
-              <div className="flex-1 flex items-center gap-2 px-3">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input name="q" defaultValue={params.q} placeholder="Buscar productos o tiendas..." className="flex-1 outline-none bg-transparent text-white placeholder-gray-400 text-sm" />
-              </div>
-              <button type="submit" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-                Buscar
-              </button>
-            </div>
-          </form>
+          <SearchBar defaultValue={params.q} />
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="#productos" className="bg-white text-brand-800 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm flex items-center gap-2 shadow-lg">

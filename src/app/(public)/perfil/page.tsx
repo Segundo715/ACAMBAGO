@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useReverification } from "@clerk/nextjs";
+import { isReverificationCancelledError } from "@clerk/nextjs/errors";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -48,6 +49,7 @@ function orderItemsSummary(order: BuyerOrder) {
 export default function PerfilPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const createPhoneNumberWithReverification = useReverification((phoneNumber: string) => user!.createPhoneNumber({ phoneNumber }));
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -206,14 +208,19 @@ export default function PerfilPage() {
 
     setSaving(true);
     try {
-      const phoneResource = await user.createPhoneNumber({ phoneNumber: `+52${digits}` });
+      const phoneResource = await createPhoneNumberWithReverification(`+52${digits}`);
+      if (!phoneResource) return;
       await phoneResource.prepareVerification();
       setPendingPhoneResource(phoneResource);
       setVerifyingPhone(true);
       toast.success("Te enviamos un código por SMS a tu teléfono");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo enviar el código de verificación";
-      toast.error(message);
+      if (isReverificationCancelledError(err)) {
+        toast("Cancelaste la verificación", { icon: "ℹ️" });
+      } else {
+        const message = err instanceof Error ? err.message : "No se pudo enviar el código de verificación";
+        toast.error(message);
+      }
     }
     setSaving(false);
   };

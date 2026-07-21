@@ -96,6 +96,7 @@ const FEATURED_CATEGORIES = [
   { name: "Tienda de ropa", emoji: "👗", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80", desc: "Moda para toda la familia" },
   { name: "Electrónica",    emoji: "📱", image: "https://images.unsplash.com/photo-1491933382434-500287f9b54b?w=400&q=80", desc: "Gadgets y accesorios" },
   { name: "Joyería",        emoji: "💍", image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80", desc: "Plata, oro y fantasía" },
+  { name: "Accesorios",     emoji: "👜", image: "https://images.unsplash.com/photo-1511556820780-d912e42b4980?w=400&q=80", desc: "Bolsas, lentes y más" },
   { name: "Zapatería",      emoji: "👟", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", desc: "Calzado para todos" },
   { name: "Artesanías",     emoji: "🏺", image: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=400&q=80", desc: "Hecho a mano en Acámbaro" },
   { name: "Deportes",       emoji: "⚽", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80", desc: "Equipo y ropa deportiva" },
@@ -238,7 +239,7 @@ export default async function HomePage({
                 <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Encuentra exactamente lo que buscas</p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                 {FEATURED_CATEGORIES.map((fc) => (
                   <Link key={fc.name} href={`/?category=${encodeURIComponent(fc.name)}`}
                     className="group card hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 dark:hover:bg-white/10 transition-all duration-200">

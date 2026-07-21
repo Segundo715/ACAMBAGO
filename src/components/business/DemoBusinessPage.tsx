@@ -110,20 +110,19 @@ export default function DemoBusinessPage({
                 {productLabel}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {products.map((p) => (
+                {products.map((p) => {
+                  const extra = DEMO_PRODUCT_EXTRAS[p.id];
+                  const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
+                  return (
                   <div key={p.id} className="card overflow-hidden flex flex-col relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
                     {/* Link invisible que cubre la card, por debajo del botón */}
                     <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
                     <div className="relative w-full h-44 bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden pointer-events-none">
-                      {(() => {
-                        const extra = DEMO_PRODUCT_EXTRAS[p.id];
-                        const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
-                        return gallery.length ? (
-                          <MiniCarousel images={gallery} name={p.name} />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-4xl">{emoji}</div>
-                        );
-                      })()}
+                      {gallery.length ? (
+                        <MiniCarousel images={gallery} name={p.name} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">{emoji}</div>
+                      )}
                     </div>
                     <div className="p-4 flex flex-col gap-3 relative z-10">
                       <div className="min-w-0">
@@ -138,11 +137,12 @@ export default function DemoBusinessPage({
                         </p>
                       </div>
                       <AddToCartButton
-                        product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price }}
+                        product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price, image_url: gallery[0] }}
                       />
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}

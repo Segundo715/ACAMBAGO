@@ -10,6 +10,7 @@ interface Props {
     business_id: string;
     name: string;
     price: number;
+    image_url?: string;
   };
   size?: "sm" | "md";
 }

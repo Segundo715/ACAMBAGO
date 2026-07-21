@@ -1,6 +1,7 @@
 "use client";
 
-import { X, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
+import { X, ShoppingCart, Trash2, Plus, Minus, Package } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
@@ -54,6 +55,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {items.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-2xl">
+                  <div className="relative w-14 h-14 rounded-xl bg-slate-200 dark:bg-white/10 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    {item.image_url ? (
+                      <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                    ) : (
+                      <Package className="w-5 h-5 text-slate-400 dark:text-gray-500" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{item.name}</p>
                     <p className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-0.5">{formatPrice(item.price)}</p>

@@ -51,7 +51,7 @@ function ReelCard({ item }: { item: ReelItem }) {
         {/* z-10 para que el botón esté por encima del Link invisible */}
         <div className="relative z-10">
           <AddToCartButton
-            product={{ id: item.id, business_id: item.business_id, name: item.name, price: item.price }}
+            product={{ id: item.id, business_id: item.business_id, name: item.name, price: item.price, image_url: item.image }}
           />
         </div>
       </div>

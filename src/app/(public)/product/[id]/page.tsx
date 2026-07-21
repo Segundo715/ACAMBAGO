@@ -195,7 +195,7 @@ export default async function ProductPage({
           {/* Botones */}
           <div className="space-y-3 pt-1">
             <AddToCartButton
-              product={{ id: product.id, business_id: product.business_id, name: product.name, price: product.price }}
+              product={{ id: product.id, business_id: product.business_id, name: product.name, price: product.price, image_url: images[0] }}
             />
             {whatsappUrl && (
               <a

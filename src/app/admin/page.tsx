@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { Business } from "@/types";
+import { Business, CATEGORY_ICONS } from "@/types";
 import AdminApproveButton from "./AdminApproveButton";
 import AdminBusinessActions from "./AdminBusinessActions";
 import {
@@ -207,8 +207,8 @@ export default async function AdminPage({
                 {pending.map((b) => (
                   <div key={b.id} className="card p-4 flex items-start justify-between gap-4 flex-wrap border-l-4 border-l-yellow-400">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                        <Store className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      <div className="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-500/10 flex items-center justify-center flex-shrink-0 text-xl">
+                        {CATEGORY_ICONS[b.category] ?? "🏪"}
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-900 dark:text-white text-sm">{b.name}</p>
@@ -241,8 +241,8 @@ export default async function AdminPage({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {approvedBusinesses.map((b) => (
                   <div key={b.id} className={`card p-4 flex items-start gap-3 ${!b.is_active ? "opacity-60" : ""}`}>
-                    <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 flex items-center justify-center flex-shrink-0">
-                      <Store className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                    <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 flex items-center justify-center flex-shrink-0 text-2xl">
+                      {CATEGORY_ICONS[b.category] ?? "🏪"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">

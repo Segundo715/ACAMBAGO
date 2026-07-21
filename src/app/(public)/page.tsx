@@ -100,6 +100,15 @@ const FEATURED_CATEGORIES = [
   { name: "Zapatería",      emoji: "👟", image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80", desc: "Calzado para todos" },
   { name: "Artesanías",     emoji: "🏺", image: "https://images.unsplash.com/photo-1493106641515-6b5631de4bb9?w=400&q=80", desc: "Hecho a mano en Acámbaro" },
   { name: "Deportes",       emoji: "⚽", image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80", desc: "Equipo y ropa deportiva" },
+  { name: "Farmacia",       emoji: "💊", image: "https://images.unsplash.com/photo-1611072965169-e1534f6f300c?w=400&q=80", desc: "Medicamentos y salud" },
+  { name: "Ferretería",     emoji: "🔧", image: "https://images.unsplash.com/photo-1631856954655-966f97d809de?w=400&q=80", desc: "Herramientas y materiales" },
+  { name: "Papelería",      emoji: "📓", image: "https://images.unsplash.com/photo-1509528640600-be205362320b?w=400&q=80", desc: "Todo para la escuela y oficina" },
+  { name: "Mueblería",      emoji: "🛋️", image: "https://images.unsplash.com/photo-1634712282287-14ed57b9cc89?w=400&q=80", desc: "Muebles para tu hogar" },
+  { name: "Abarrotes",      emoji: "🛒", image: "https://images.unsplash.com/photo-1699377179823-d5975d237b4e?w=400&q=80", desc: "Lo esencial de la despensa" },
+  { name: "Cosméticos",     emoji: "💄", image: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400&q=80", desc: "Belleza y cuidado personal" },
+  { name: "Mascotas",       emoji: "🐾", image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&q=80", desc: "Todo para tu mascota" },
+  { name: "Juguetería",     emoji: "🧸", image: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&q=80", desc: "Diversión para los niños" },
+  { name: "Librería",       emoji: "📚", image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80", desc: "Libros para todas las edades" },
 ];
 
 export default async function HomePage({
@@ -239,7 +248,7 @@ export default async function HomePage({
                 <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Encuentra exactamente lo que buscas</p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {FEATURED_CATEGORIES.map((fc) => (
                   <Link key={fc.name} href={`/?category=${encodeURIComponent(fc.name)}`}
                     className="group card hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 dark:hover:bg-white/10 transition-all duration-200">

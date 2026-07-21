@@ -146,3 +146,23 @@ export const BUSINESS_CATEGORIES = [
   "Librería",
   "Otro",
 ] as const;
+
+export const CATEGORY_ICONS: Record<string, string> = {
+  "Tienda de ropa": "👗",
+  "Zapatería": "👟",
+  "Farmacia": "💊",
+  "Ferretería": "🔧",
+  "Papelería": "📓",
+  "Electrónica": "📱",
+  "Joyería": "💍",
+  "Accesorios": "👜",
+  "Mueblería": "🛋️",
+  "Abarrotes": "🛒",
+  "Cosméticos": "💄",
+  "Mascotas": "🐾",
+  "Artesanías": "🏺",
+  "Deportes": "⚽",
+  "Juguetería": "🧸",
+  "Librería": "📚",
+  "Otro": "🏪",
+};

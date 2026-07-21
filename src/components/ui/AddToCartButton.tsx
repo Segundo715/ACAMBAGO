@@ -44,7 +44,7 @@ export default function AddToCartButton({ product, size = "md" }: Props) {
   return (
     <button
       onClick={handleAdd}
-      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 ${
+      className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
         added
           ? "bg-green-500 text-white"
           : "bg-brand-600 hover:bg-brand-700 text-white"
@@ -52,13 +52,14 @@ export default function AddToCartButton({ product, size = "md" }: Props) {
     >
       {added ? (
         <>
-          <Check className="w-4 h-4" />
+          <Check className="w-4 h-4 flex-shrink-0" />
           Agregado
         </>
       ) : (
         <>
-          <ShoppingCart className="w-4 h-4" />
-          Agregar al carrito
+          <ShoppingCart className="w-4 h-4 flex-shrink-0" />
+          <span className="sm:hidden">Agregar</span>
+          <span className="hidden sm:inline">Agregar al carrito</span>
         </>
       )}
     </button>

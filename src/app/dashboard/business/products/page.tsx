@@ -259,11 +259,11 @@ export default function ProductsPage() {
 
       {/* Product grid */}
       {!loaded ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="card animate-pulse">
-              <div className="h-40 bg-slate-100 dark:bg-white/5" />
-              <div className="p-4 space-y-2">
+              <div className="h-28 sm:h-40 bg-slate-100 dark:bg-white/5" />
+              <div className="p-3 sm:p-4 space-y-2">
                 <div className="h-4 bg-slate-100 dark:bg-white/5 rounded w-3/4" />
                 <div className="h-3 bg-slate-100 dark:bg-white/5 rounded w-1/2" />
               </div>
@@ -280,10 +280,10 @@ export default function ProductsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {products.map((p) => (
             <div key={p.id} className="card overflow-hidden group hover:shadow-md transition-all">
-              <div className="h-40 bg-slate-50 dark:bg-white/5 relative flex items-center justify-center overflow-hidden">
+              <div className="h-28 sm:h-40 bg-slate-50 dark:bg-white/5 relative flex items-center justify-center overflow-hidden">
                 {p.image_url ? (
                   <Image src={p.image_url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
@@ -295,26 +295,26 @@ export default function ProductsPage() {
                   </span>
                 )}
               </div>
-              <div className="p-4">
-                <p className="font-semibold text-slate-900 dark:text-white line-clamp-1">{p.name}</p>
+              <div className="p-3 sm:p-4">
+                <p className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base line-clamp-1">{p.name}</p>
                 {p.description && (
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{p.description}</p>
+                  <p className="hidden sm:block text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{p.description}</p>
                 )}
-                <p className="text-brand-600 dark:text-brand-400 font-bold text-lg mt-2">{formatPrice(p.price)}</p>
+                <p className="text-brand-600 dark:text-brand-400 font-bold text-base sm:text-lg mt-1 sm:mt-2">{formatPrice(p.price)}</p>
 
                 {/* Action buttons — prominentes */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4">
                   <button
                     onClick={() => openEdit(p)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-colors"
                   >
-                    <Pencil className="w-3.5 h-3.5" /> Editar
+                    <Pencil className="w-3.5 h-3.5 flex-shrink-0" /> Editar
                   </button>
                   <button
                     onClick={() => handleDelete(p.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    <Trash2 className="w-3.5 h-3.5 flex-shrink-0" /> Eliminar
                   </button>
                 </div>
               </div>

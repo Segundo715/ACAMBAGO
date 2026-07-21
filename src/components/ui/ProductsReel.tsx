@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Tag } from "lucide-react";
@@ -63,7 +64,34 @@ function ReelCard({ item }: { item: ReelItem }) {
 // productos, el scroll ya alcanza a disimular la repetición.
 const MIN_ITEMS_FOR_LOOP = 5;
 
+// Velocidad del auto-avance en px por frame (~60fps).
+const AUTO_SCROLL_SPEED = 0.6;
+
 export default function ProductsReel({ items }: { items: ReelItem[] }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const draggingRef = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartScroll = useRef(0);
+
+  useEffect(() => {
+    if (items.length < MIN_ITEMS_FOR_LOOP) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    let rafId: number;
+    const tick = () => {
+      if (!pausedRef.current) {
+        const half = el.scrollWidth / 2;
+        el.scrollLeft += AUTO_SCROLL_SPEED;
+        if (el.scrollLeft >= half) el.scrollLeft -= half;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [items.length]);
+
   if (items.length < MIN_ITEMS_FOR_LOOP) {
     return (
       <div className="flex gap-5 flex-wrap px-4">
@@ -76,15 +104,44 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
 
   const doubled = [...items, ...items];
 
+  // El toque en móvil usa el scroll nativo (con inercia); solo el mouse en
+  // desktop necesita el arrastre manual, ya que overflow-x-auto no se puede
+  // "jalar" con click sostenido por sí solo.
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    pausedRef.current = true;
+    if (e.pointerType === "mouse" && scrollerRef.current) {
+      draggingRef.current = true;
+      dragStartX.current = e.clientX;
+      dragStartScroll.current = scrollerRef.current.scrollLeft;
+      scrollerRef.current.setPointerCapture(e.pointerId);
+    }
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || !scrollerRef.current) return;
+    scrollerRef.current.scrollLeft = dragStartScroll.current - (e.clientX - dragStartX.current);
+  };
+  const endInteraction = () => {
+    draggingRef.current = false;
+    pausedRef.current = false;
+  };
+
   return (
     <div
-      className="overflow-hidden"
+      ref={scrollerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endInteraction}
+      onPointerLeave={endInteraction}
+      onPointerCancel={endInteraction}
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={endInteraction}
+      className="overflow-x-auto cursor-grab active:cursor-grabbing select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{
         maskImage: "linear-gradient(to right, transparent, white 8%, white 92%, transparent)",
         WebkitMaskImage: "linear-gradient(to right, transparent, white 8%, white 92%, transparent)",
       }}
     >
-      <div className="flex gap-5 w-max animate-reel hover:[animation-play-state:paused]">
+      <div className="flex gap-5 w-max">
         {doubled.map((item, i) => (
           <ReelCard key={`${item.id}-${i}`} item={item} />
         ))}

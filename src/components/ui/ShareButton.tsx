@@ -4,11 +4,18 @@ import { Share2, Check } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-export default function ShareButton({ businessName }: { businessName: string }) {
+interface Props {
+  businessName: string;
+  url?: string;
+  className?: string;
+  label?: string;
+}
+
+export default function ShareButton({ businessName, url: urlProp, className, label = "Compartir" }: Props) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = urlProp ?? window.location.href;
     if (navigator.share) {
       try {
         await navigator.share({ title: businessName, text: `Mira ${businessName} en Acom-Di`, url });
@@ -30,10 +37,10 @@ export default function ShareButton({ businessName }: { businessName: string }) 
   return (
     <button
       onClick={handleShare}
-      className="btn-secondary flex items-center gap-2 text-sm"
+      className={className ?? "btn-secondary flex items-center gap-2 text-sm"}
     >
       {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-      Compartir
+      {label}
     </button>
   );
 }

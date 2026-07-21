@@ -8,6 +8,7 @@ import { Store, User, ChevronDown, Plus } from "lucide-react";
 import { getDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
 import { loadOwnedBusinesses, setCurrentBusinessId } from "@/lib/current-business";
 import { Business } from "@/types";
+import ShareButton from "@/components/ui/ShareButton";
 
 export default function UserInfo() {
   const { user, isLoaded } = useUser();
@@ -20,7 +21,10 @@ export default function UserInfo() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const mode = getDemoMode();
+    // Si ya hay una sesion real de Clerk, ignora la cookie de demo por
+    // completo — no debe tapar la identidad real del usuario logueado.
+    if (!isLoaded) return;
+    const mode = user ? null : getDemoMode();
     setDemoMode(mode);
     if (mode === "buyer") {
       setName(DEMO_BUYER.name);
@@ -30,7 +34,7 @@ export default function UserInfo() {
       setActiveBusiness({ name: DEMO_SELLER.businessName });
       setRole("business");
     }
-  }, []);
+  }, [isLoaded, user]);
 
   useEffect(() => {
     if (demoMode || !isLoaded || !user) return;
@@ -74,31 +78,57 @@ export default function UserInfo() {
 
   const hasMultiple = businesses.length > 1;
 
+  const canPreviewStore = role === "business" && !!activeBusiness?.id;
+
   return (
     <div ref={containerRef} className="relative px-3 py-3 border-b border-slate-200 dark:border-white/10">
-      <button
-        type="button"
-        onClick={() => hasMultiple && setOpen((o) => !o)}
-        className={`w-full flex items-center gap-3 ${hasMultiple ? "cursor-pointer" : "cursor-default"}`}
-      >
-        <div className="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0">
-          {role === "business"
-            ? <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-            : <User className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-          }
-        </div>
-        <div className="min-w-0 flex-1 text-left">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-            {activeBusiness?.name ?? name}
-          </p>
-          {activeBusiness && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{name}</p>
-          )}
-        </div>
-        {hasMultiple && (
-          <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      <div className="flex items-center gap-3">
+        {canPreviewStore ? (
+          <Link
+            href={`/business/${activeBusiness!.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Ver mi tienda como la ven los clientes"
+            className="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0 hover:bg-brand-200 dark:hover:bg-brand-500/30 transition-colors"
+          >
+            <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+          </Link>
+        ) : (
+          <div className="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0">
+            {role === "business"
+              ? <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+              : <User className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+            }
+          </div>
         )}
-      </button>
+
+        <button
+          type="button"
+          onClick={() => hasMultiple && setOpen((o) => !o)}
+          className={`min-w-0 flex-1 flex items-center gap-1.5 ${hasMultiple ? "cursor-pointer" : "cursor-default"}`}
+        >
+          <div className="min-w-0 flex-1 text-left">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+              {activeBusiness?.name ?? name}
+            </p>
+            {activeBusiness && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{name}</p>
+            )}
+          </div>
+          {hasMultiple && (
+            <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+          )}
+        </button>
+      </div>
+
+      {canPreviewStore && (
+        <ShareButton
+          businessName={activeBusiness!.name}
+          url={typeof window !== "undefined" ? `${window.location.origin}/business/${activeBusiness!.id}` : undefined}
+          label="Compartir mi tienda"
+          className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+        />
+      )}
 
       {open && hasMultiple && (
         <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-white dark:bg-[#0a1628] border border-slate-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden">

@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   User, Save, Ticket, Store, ArrowLeft, ShoppingBag,
-  Heart, Star, MapPin, ChevronRight, Package,
+  Heart, Star, MapPin, ChevronRight, Package, Camera,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -55,6 +56,13 @@ export default function PerfilPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [ordersCount, setOrdersCount] = useState(0);
+  const [originalPhone, setOriginalPhone] = useState("");
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+  const [pendingPhoneResource, setPendingPhoneResource] = useState<Awaited<ReturnType<NonNullable<typeof user>["createPhoneNumber"]>> | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [confirmingCode, setConfirmingCode] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -77,10 +85,12 @@ export default function PerfilPage() {
     }
 
     const load = async () => {
-      const { data: profile } = await supabase.from("profiles").select("name, phone").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("name, phone, avatar_url").eq("id", user.id).single();
       if (profile) {
         setName(profile.name ?? "");
         setPhone(profile.phone ?? "");
+        setAvatarUrl(profile.avatar_url ?? null);
+        setOriginalPhone(profile.phone ?? "");
       } else {
         setName(user.fullName ?? user.firstName ?? "");
       }
@@ -128,16 +138,108 @@ export default function PerfilPage() {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const demoMode = getDemoMode();
+    if (!file || !user || demoMode || IS_DEMO) return;
+
+    setUploadingAvatar(true);
+    try {
+      const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+      let uploadBlob: Blob = file;
+      let ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      let contentType = file.type || "image/jpeg";
+
+      if (isHeic) {
+        const convert = (await import("heic-convert/browser")).default;
+        const buffer = await file.arrayBuffer();
+        const output = await convert({ buffer: new Uint8Array(buffer), format: "JPEG", quality: 0.9 });
+        uploadBlob = new Blob([output as BlobPart], { type: "image/jpeg" });
+        ext = "jpg";
+        contentType = "image/jpeg";
+      }
+
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("profile-images").upload(path, uploadBlob, { upsert: true, contentType });
+      if (uploadErr) throw new Error(uploadErr.message);
+
+      const { data: { publicUrl } } = supabase.storage.from("profile-images").getPublicUrl(path);
+      const { error: dbErr } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client", avatar_url: publicUrl });
+      if (dbErr) throw new Error(dbErr.message);
+
+      setAvatarUrl(publicUrl);
+      toast.success("Foto de perfil actualizada");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "No se pudo subir la foto");
+    }
+    setUploadingAvatar(false);
+  };
+
+  const savePhoneToProfile = async () => {
+    if (!user) return;
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client" });
+    if (!error) {
+      toast.success("Perfil actualizado");
+      setEditOpen(false);
+      setOriginalPhone(phone);
+    } else {
+      toast.error("Error al guardar");
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const demoMode = getDemoMode();
     if (demoMode || IS_DEMO) { toast.success("Perfil actualizado (modo demo)"); setEditOpen(false); return; }
     if (!user) return;
+
+    const digits = phone.replace(/\D/g, "");
+    const phoneChanged = digits.length > 0 && digits !== originalPhone.replace(/\D/g, "");
+
+    if (!phoneChanged) {
+      setSaving(true);
+      await savePhoneToProfile();
+      setSaving(false);
+      return;
+    }
+
     setSaving(true);
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client" });
-    if (!error) { toast.success("Perfil actualizado"); setEditOpen(false); }
-    else toast.error("Error al guardar");
+    try {
+      const phoneResource = await user.createPhoneNumber({ phoneNumber: `+52${digits}` });
+      await phoneResource.prepareVerification();
+      setPendingPhoneResource(phoneResource);
+      setVerifyingPhone(true);
+      toast.success("Te enviamos un código por SMS a tu teléfono");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo enviar el código de verificación";
+      toast.error(message);
+    }
     setSaving(false);
+  };
+
+  const handleConfirmCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingPhoneResource) return;
+    setConfirmingCode(true);
+    try {
+      await pendingPhoneResource.attemptVerification({ code: otpCode });
+      await savePhoneToProfile();
+      setVerifyingPhone(false);
+      setPendingPhoneResource(null);
+      setOtpCode("");
+    } catch {
+      toast.error("Código incorrecto, intenta de nuevo");
+    }
+    setConfirmingCode(false);
+  };
+
+  const cancelPhoneVerification = () => {
+    pendingPhoneResource?.destroy().catch(() => {});
+    setVerifyingPhone(false);
+    setPendingPhoneResource(null);
+    setOtpCode("");
+    setPhone(originalPhone);
   };
 
   if (loading || (!getDemoMode() && !isLoaded)) {
@@ -163,8 +265,24 @@ export default function PerfilPage() {
       {/* Hero */}
       <div className="card p-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-md">
-            {initials}
+          <div className="relative w-16 h-16 flex-shrink-0">
+            <div className="w-16 h-16 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt={name || "Mi foto"} fill className="object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
+            {!demoMode && !IS_DEMO && (
+              <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-[#0a1628] border border-slate-200 dark:border-white/20 rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-sm">
+                {uploadingAvatar ? (
+                  <span className="w-3 h-3 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+                )}
+                <input type="file" accept="image/*,.heic,.heif" onChange={handleAvatarChange} disabled={uploadingAvatar} className="hidden" />
+              </label>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">{name || "Mi cuenta"}</h1>
@@ -182,7 +300,34 @@ export default function PerfilPage() {
         </div>
 
         {/* Edit form (inline collapse) */}
-        {editOpen && (
+        {editOpen && verifyingPhone && (
+          <form onSubmit={handleConfirmCode} className="mt-5 pt-5 border-t border-slate-100 dark:border-white/10 space-y-3">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Te enviamos un código por SMS al <span className="font-semibold">{phone}</span>. Ingrésalo para confirmar tu número.
+            </p>
+            <div>
+              <label className="label">Código de verificación</label>
+              <input
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+                className="input tracking-widest text-center"
+                placeholder="123456"
+                inputMode="numeric"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={confirmingCode || !otpCode} className="btn-primary flex items-center gap-2 flex-1">
+                <Save className="w-4 h-4" />
+                {confirmingCode ? "Verificando..." : "Confirmar código"}
+              </button>
+              <button type="button" onClick={cancelPhoneVerification} className="px-4 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+        {editOpen && !verifyingPhone && (
           <form onSubmit={handleSave} className="mt-5 pt-5 border-t border-slate-100 dark:border-white/10 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -192,6 +337,9 @@ export default function PerfilPage() {
               <div>
                 <label className="label">Teléfono</label>
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input" placeholder="4181234567" />
+                {!IS_DEMO && !getDemoMode() && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Si lo cambias, te vamos a mandar un código por SMS para confirmarlo.</p>
+                )}
               </div>
             </div>
             <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 w-full sm:w-auto">

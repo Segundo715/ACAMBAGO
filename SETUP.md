@@ -21,6 +21,7 @@ En **SQL Editor**, pega y ejecuta estos archivos de `supabase/` **en este orden 
 6. `payments-gateway.sql` — columnas de pago en `orders` (`payment_status`, `mp_preference_id`, `mp_payment_id`)
 7. `payments-per-business.sql` — credenciales de Mercado Pago por negocio (`mp_public_key`, `mp_access_token`)
 8. `stripe-connect.sql` — columnas de Stripe Connect en `businesses`/`orders`
+9. `profile-avatars.sql` — bucket `profile-images` para la foto de perfil del comprador
 
 Saltarse el orden o un archivo puede romper foreign keys o dejar columnas faltantes.
 

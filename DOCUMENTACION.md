@@ -28,6 +28,7 @@ Todos estos archivos viven en `supabase/` y ya fueron aplicados al proyecto de S
 6. `payments-gateway.sql` — columnas `payment_status`, `mp_preference_id`, `mp_payment_id` en `orders` (pagos con Mercado Pago).
 7. `payments-per-business.sql` — columnas `mp_public_key`/`mp_access_token` en `businesses` (cada negocio cobra a su propia cuenta de Mercado Pago).
 8. `stripe-connect.sql` — columnas `stripe_account_id`/`stripe_charges_enabled` en `businesses` y `stripe_payment_intent_id` en `orders` (Stripe Connect).
+9. `profile-avatars.sql` — bucket `profile-images` para la foto de perfil del comprador (`profiles.avatar_url`).
 
 ## Sistema de pedidos
 

@@ -125,6 +125,7 @@ export interface Order {
 export interface QRPayload {
   coupon_code: string;
   business_id: string;
+  user_id?: string;
 }
 
 export const BUSINESS_CATEGORIES = [

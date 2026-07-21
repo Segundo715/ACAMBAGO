@@ -1,6 +1,6 @@
 "use client";
 
-import { Coupon } from "@/types";
+import { Coupon, QRPayload } from "@/types";
 import { formatDiscount } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -10,12 +10,26 @@ import { Ticket, Calendar, Users } from "lucide-react";
 interface Props {
   coupon: Coupon;
   showQR?: boolean;
+  // Id del comprador que esta viendo el cupon (si esta logueado). Se
+  // incrusta en el QR para que el canje se pueda limitar a una vez por
+  // persona; sin esto, el mismo QR es identico para cualquiera que lo vea.
+  buyerUserId?: string;
 }
 
-export default function CouponCard({ coupon, showQR = false }: Props) {
+export default function CouponCard({ coupon, showQR = false, buyerUserId }: Props) {
   const isExpired = coupon.expires_at ? new Date(coupon.expires_at) < new Date() : false;
   const isFull = coupon.limit_count ? coupon.used_count >= coupon.limit_count : false;
   const isValid = coupon.is_active && !isExpired && !isFull;
+
+  let qrValue = coupon.qr_data;
+  if (buyerUserId) {
+    try {
+      const payload = JSON.parse(coupon.qr_data) as QRPayload;
+      qrValue = JSON.stringify({ ...payload, user_id: buyerUserId });
+    } catch {
+      // qr_data mal formado; se muestra tal cual en vez de tronar
+    }
+  }
 
   return (
     <div className={`card flex flex-col sm:flex-row overflow-hidden ${!isValid ? "opacity-60" : ""}`}>
@@ -70,8 +84,8 @@ export default function CouponCard({ coupon, showQR = false }: Props) {
         <div className="flex items-center justify-center p-4 border-t sm:border-t-0 sm:border-l border-dashed border-gray-200 dark:border-white/10">
           <div className="flex flex-col items-center gap-1">
             <QRCodeSVG
-              value={coupon.qr_data}
-              size={80}
+              value={qrValue}
+              size={150}
               bgColor="#ffffff"
               fgColor="#1f2937"
               level="M"

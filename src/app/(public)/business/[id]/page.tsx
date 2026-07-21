@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
@@ -69,6 +70,7 @@ async function getSupabaseData(id: string) {
 
 export default async function BusinessPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const { userId } = await auth();
 
   // 1. Buscar en datos demo primero
   const demoBusiness = DEMO_ALL_BUSINESSES_LIST.find((b) => b.id === id);
@@ -84,6 +86,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
         coupons={coupons}
         reviews={reviews}
         emoji={emoji}
+        buyerUserId={userId ?? undefined}
       />
     );
   }
@@ -184,7 +187,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
             </div>
           ) : (
             <div className="space-y-3">
-              {coupons.map((c) => <CouponCard key={c.id} coupon={c} showQR />)}
+              {coupons.map((c) => <CouponCard key={c.id} coupon={c} showQR buyerUserId={userId ?? undefined} />)}
             </div>
           )}
         </div>

@@ -30,10 +30,19 @@ export default function ScanPage() {
     setResult(null);
 
     try {
+      // El QR trae el id del comprador (si estaba logueado al verlo) para
+      // poder limitar el canje a una vez por persona, no solo por límite total.
+      let user_id: string | undefined;
+      try {
+        user_id = JSON.parse(qrData)?.user_id;
+      } catch {
+        // qr_data invalido; se manda igual y el endpoint lo rechaza
+      }
+
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_data: qrData }),
+        body: JSON.stringify({ qr_data: qrData, user_id }),
       });
 
       const data = await response.json();

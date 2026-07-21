@@ -19,6 +19,7 @@ interface Props {
   reviews: Review[];
   emoji: string;
   productLabel?: string;
+  buyerUserId?: string;
 }
 
 export default function DemoBusinessPage({
@@ -28,6 +29,7 @@ export default function DemoBusinessPage({
   reviews,
   emoji,
   productLabel = "Productos y servicios",
+  buyerUserId,
 }: Props) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -109,7 +111,7 @@ export default function DemoBusinessPage({
                 <Package className="w-5 h-5 text-brand-600" />
                 {productLabel}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {products.map((p) => {
                   const extra = DEMO_PRODUCT_EXTRAS[p.id];
                   const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
@@ -117,18 +119,18 @@ export default function DemoBusinessPage({
                   <div key={p.id} className="card overflow-hidden flex flex-col relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
                     {/* Link invisible que cubre la card, por debajo del botón */}
                     <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
-                    <div className="relative w-full h-44 bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden pointer-events-none">
+                    <div className="relative w-full h-32 sm:h-44 bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden pointer-events-none">
                       {gallery.length ? (
                         <MiniCarousel images={gallery} name={p.name} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">{emoji}</div>
                       )}
                     </div>
-                    <div className="p-4 flex flex-col gap-3 relative z-10">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</p>
+                    <div className="p-3 sm:p-4 flex flex-col gap-2 sm:gap-3 relative z-10">
+                      <div className="min-w-0 text-center sm:text-left">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1">{p.name}</p>
                         {p.description && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                          <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                             {p.description}
                           </p>
                         )}
@@ -202,7 +204,7 @@ export default function DemoBusinessPage({
           ) : (
             <div className="space-y-3">
               {coupons.map((c) => (
-                <CouponCard key={c.id} coupon={c} showQR />
+                <CouponCard key={c.id} coupon={c} showQR buyerUserId={buyerUserId} />
               ))}
             </div>
           )}

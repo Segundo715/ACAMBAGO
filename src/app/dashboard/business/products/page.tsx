@@ -9,6 +9,7 @@ import Image from "next/image";
 import toast from "react-hot-toast";
 import { DEMO_PRODUCTS } from "@/lib/demo-data";
 import { formatPrice } from "@/lib/utils";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
@@ -44,9 +45,9 @@ export default function ProductsPage() {
         return;
       }
       if (!isLoaded || !user) return;
-      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
       if (!biz) {
-        window.location.href = "/dashboard/business/settings";
+        window.location.href = "/perfil/crear-tienda";
         return;
       }
       setBusinessId(biz.id);

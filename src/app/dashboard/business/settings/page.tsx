@@ -3,9 +3,11 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
-import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2 } from "lucide-react";
+import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2, Plus } from "lucide-react";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 import toast from "react-hot-toast";
 
 function SettingsContent() {
@@ -13,8 +15,8 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const [business, setBusiness] = useState<Partial<Business>>({});
   const [loading, setLoading] = useState(true);
+  const [noBusiness, setNoBusiness] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isNew, setIsNew] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [locating, setLocating] = useState(false);
   const [connectingStripe, setConnectingStripe] = useState(false);
@@ -43,12 +45,11 @@ function SettingsContent() {
   useEffect(() => {
     if (!isLoaded || !user) return;
     const load = async () => {
-      const { data } = await supabase.from("businesses").select("*").eq("owner_id", user.id).single();
-      if (data) {
-        setBusiness(data as Business);
+      const { active } = await loadOwnedBusinesses(supabase, user.id);
+      if (active) {
+        setBusiness(active);
       } else {
-        setIsNew(true);
-        setBusiness({ category: "Otro", latitude: 20.0319, longitude: -100.7273 });
+        setNoBusiness(true);
       }
       setLoading(false);
     };
@@ -56,8 +57,9 @@ function SettingsContent() {
   }, [isLoaded, user?.id]);
 
   useEffect(() => {
-    if (!user || !searchParams.get("stripe_return")) return;
-    fetch("/api/stripe/connect").then((res) => res.json()).then((data) => {
+    const returnBusinessId = searchParams.get("business_id");
+    if (!user || !searchParams.get("stripe_return") || !returnBusinessId) return;
+    fetch(`/api/stripe/connect?business_id=${returnBusinessId}`).then((res) => res.json()).then((data) => {
       if (data.chargesEnabled) {
         toast.success("¡Stripe conectado! Ya puedes recibir pagos con tarjeta.");
         setBusiness((prev) => ({ ...prev, stripe_charges_enabled: true }));
@@ -68,8 +70,13 @@ function SettingsContent() {
   }, [user, searchParams]);
 
   const handleConnectStripe = async () => {
+    if (!business.id) return;
     setConnectingStripe(true);
-    const res = await fetch("/api/stripe/connect", { method: "POST" });
+    const res = await fetch("/api/stripe/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ business_id: business.id }),
+    });
     const data = await res.json();
     if (!res.ok || !data.url) {
       toast.error("No se pudo iniciar la conexión con Stripe.");
@@ -105,7 +112,6 @@ function SettingsContent() {
     }
 
     const payload = {
-      owner_id: user.id,
       name: business.name!,
       description: business.description,
       category: business.category!,
@@ -121,24 +127,11 @@ function SettingsContent() {
       mp_access_token: business.mp_access_token || null,
     };
 
-    if (isNew) {
-      // Ensure profile exists
-      await supabase.from("profiles").upsert({ id: user.id, name: user.fullName ?? user.firstName ?? user.emailAddresses[0]?.emailAddress ?? "Usuario", role: "business" });
-
-      const { error } = await supabase.from("businesses").insert({ ...payload, is_approved: false });
-      if (!error) {
-        toast.success("Negocio registrado. Pendiente de aprobación.");
-        setIsNew(false);
-      } else {
-        toast.error("Error al registrar el negocio: " + error.message);
-      }
+    const { error } = await supabase.from("businesses").update(payload).eq("id", business.id);
+    if (!error) {
+      toast.success("Cambios guardados");
     } else {
-      const { error } = await supabase.from("businesses").update(payload).eq("owner_id", user.id);
-      if (!error) {
-        toast.success("Cambios guardados");
-      } else {
-        toast.error("Error al guardar: " + error.message);
-      }
+      toast.error("Error al guardar: " + error.message);
     }
 
     setSaving(false);
@@ -149,18 +142,33 @@ function SettingsContent() {
 
   if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map((i) => <div key={i} className="h-12 bg-slate-100 dark:bg-white/5 rounded-xl" />)}</div>;
 
+  if (noBusiness) {
+    return (
+      <div className="max-w-2xl text-center py-12 space-y-3">
+        <Settings className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+        <p className="text-slate-500 dark:text-slate-400">No encontramos ninguna tienda tuya todavía.</p>
+        <Link href="/perfil/crear-tienda" className="btn-primary inline-flex items-center gap-2 text-sm">
+          <Plus className="w-4 h-4" /> Crear tienda
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-slate-100 dark:bg-white/10 rounded-xl flex items-center justify-center">
-          <Settings className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-slate-100 dark:bg-white/10 rounded-xl flex items-center justify-center">
+            <Settings className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Configuración del negocio</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Actualiza la información de tu negocio</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {isNew ? "Registrar negocio" : "Configuración del negocio"}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">{isNew ? "Completa los datos de tu negocio" : "Actualiza la información de tu negocio"}</p>
-        </div>
+        <Link href="/perfil/crear-tienda" className="btn-secondary flex items-center gap-2 text-sm flex-shrink-0">
+          <Plus className="w-4 h-4" /> Agregar otra tienda
+        </Link>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
@@ -297,9 +305,7 @@ function SettingsContent() {
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Conecta tu propia cuenta de Stripe para recibir pagos con tarjeta directo en el checkout. El dinero cae en tu cuenta, no en la de AcambaGo. Stripe te pedirá datos de identidad y de tu cuenta bancaria (proceso de Stripe, no de AcambaGo).
           </p>
-          {isNew ? (
-            <p className="text-xs text-amber-600 dark:text-amber-400">Primero registra tu negocio para poder conectar Stripe.</p>
-          ) : business.stripe_charges_enabled ? (
+          {business.stripe_charges_enabled ? (
             <div className="flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
               <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
               <span className="text-xs text-green-700 dark:text-green-300">Stripe conectado y listo para recibir pagos.</span>
@@ -318,7 +324,7 @@ function SettingsContent() {
 
         <button type="submit" disabled={saving} className="btn-primary w-full flex items-center justify-center gap-2">
           <Save className="w-4 h-4" />
-          {saving ? "Guardando..." : isNew ? "Registrar negocio" : "Guardar cambios"}
+          {saving ? "Guardando..." : "Guardar cambios"}
         </button>
       </form>
     </div>

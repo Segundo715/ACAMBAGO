@@ -37,12 +37,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     if (profile.role === "business") {
-      const { data: business } = await supabase
+      const { data: businesses } = await supabase
         .from("businesses")
-        .select("is_approved")
+        .select("id, is_approved")
         .eq("owner_id", userId)
-        .single();
-      pendingApproval = !business || !business.is_approved;
+        .order("created_at", { ascending: true });
+
+      if (!businesses || businesses.length === 0) {
+        redirect("/perfil/crear-tienda");
+      }
+
+      const activeBusinessId = cookieStore.get("current_business_id")?.value;
+      const activeBusiness = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
+      pendingApproval = !activeBusiness.is_approved;
     }
   }
   return (

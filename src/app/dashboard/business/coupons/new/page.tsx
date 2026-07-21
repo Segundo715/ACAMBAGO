@@ -10,6 +10,7 @@ import { QRPayload } from "@/types";
 import { ArrowLeft, Ticket, Download } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 export default function NewCouponPage() {
   const [title, setTitle] = useState("");
@@ -35,7 +36,7 @@ export default function NewCouponPage() {
 
     if (!isLoaded || !user) { toast.error("No autorizado"); setSaving(false); return; }
 
-    const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+    const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
     if (!biz) { toast.error("No tienes un negocio registrado"); setSaving(false); return; }
 
     const code = generateCouponCode();

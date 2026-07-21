@@ -6,6 +6,7 @@ import { BarChart2, TrendingUp, Users, ShoppingBag, Star, ArrowUp, ArrowDown } f
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Order } from "@/types";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
@@ -117,7 +118,7 @@ export default function AnalyticsPage() {
     if (!isLoaded || !user) return;
 
     const load = async () => {
-      const { data: biz } = await supabase.from("businesses").select("id, rating_avg, rating_count").eq("owner_id", user.id).single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
       if (!biz) { setLoading(false); return; }
       setRating({ avg: biz.rating_avg ?? 0, count: biz.rating_count ?? 0 });
 

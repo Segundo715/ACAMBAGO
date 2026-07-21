@@ -1,17 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Store, User } from "lucide-react";
+import { Store, User, ChevronDown, Plus } from "lucide-react";
 import { getDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
+import { loadOwnedBusinesses, setCurrentBusinessId } from "@/lib/current-business";
+import { Business } from "@/types";
 
 export default function UserInfo() {
   const { user, isLoaded } = useUser();
   const [name, setName] = useState<string | null>(null);
-  const [businessName, setBusinessName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState<"buyer" | "seller" | null>(null);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [activeBusiness, setActiveBusiness] = useState<{ id?: string; name: string } | null>(null);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mode = getDemoMode();
@@ -21,7 +27,7 @@ export default function UserInfo() {
       setRole("client");
     } else if (mode === "seller") {
       setName(DEMO_SELLER.name);
-      setBusinessName(DEMO_SELLER.businessName);
+      setActiveBusiness({ name: DEMO_SELLER.businessName });
       setRole("business");
     }
   }, []);
@@ -43,37 +49,81 @@ export default function UserInfo() {
       setRole(profileRole);
 
       if (profileRole === "business") {
-        const { data: biz } = await supabase
-          .from("businesses")
-          .select("name")
-          .eq("owner_id", user.id)
-          .single();
-        if (biz) setBusinessName(biz.name);
+        const { businesses: owned, active } = await loadOwnedBusinesses(supabase, user.id);
+        setBusinesses(owned);
+        setActiveBusiness(active);
       }
     };
     load();
   }, [isLoaded, user?.id, demoMode]);
 
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const switchTo = (id: string) => {
+    setCurrentBusinessId(id);
+    window.location.reload();
+  };
+
   if (!name) return null;
 
+  const hasMultiple = businesses.length > 1;
+
   return (
-    <div className="px-3 py-3 border-b border-slate-200 dark:border-white/10">
-      <div className="flex items-center gap-3">
+    <div ref={containerRef} className="relative px-3 py-3 border-b border-slate-200 dark:border-white/10">
+      <button
+        type="button"
+        onClick={() => hasMultiple && setOpen((o) => !o)}
+        className={`w-full flex items-center gap-3 ${hasMultiple ? "cursor-pointer" : "cursor-default"}`}
+      >
         <div className="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0">
           {role === "business"
             ? <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             : <User className="w-4 h-4 text-brand-600 dark:text-brand-400" />
           }
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 text-left">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-            {businessName ?? name}
+            {activeBusiness?.name ?? name}
           </p>
-          {businessName && (
+          {activeBusiness && (
             <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{name}</p>
           )}
         </div>
-      </div>
+        {hasMultiple && (
+          <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        )}
+      </button>
+
+      {open && hasMultiple && (
+        <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-white dark:bg-[#0a1628] border border-slate-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden">
+          {businesses.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => switchTo(b.id)}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${
+                b.id === activeBusiness?.id ? "font-semibold text-brand-600 dark:text-brand-400" : "text-slate-700 dark:text-slate-300"
+              }`}
+            >
+              <Store className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{b.name}</span>
+            </button>
+          ))}
+          <Link
+            href="/perfil/crear-tienda"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-t border-slate-100 dark:border-white/10"
+          >
+            <Plus className="w-3.5 h-3.5 flex-shrink-0" />
+            Agregar otra tienda
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

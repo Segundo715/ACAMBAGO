@@ -13,6 +13,7 @@ import {
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { Order } from "@/types";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
@@ -83,11 +84,7 @@ export default function DashboardPage() {
     if (IS_DEMO) return;
     if (!isLoaded || !user) return;
     const load = async () => {
-      const { data: biz } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("owner_id", user.id)
-        .single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
 
       if (!biz) { setNoBusiness(true); setLoaded(true); return; }
       setBusiness(biz);
@@ -141,7 +138,7 @@ export default function DashboardPage() {
           Aun no tienes un perfil de negocio. Completa tus datos para aparecer en el directorio y gestionar productos y cupones.
         </p>
         <button
-          onClick={() => router.push("/dashboard/business/settings")}
+          onClick={() => router.push("/perfil/crear-tienda")}
           className="btn-primary flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />

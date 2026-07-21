@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
     const body = await request.json();
-    const { name, description, category, address, latitude, longitude, whatsapp } = body;
+    const { name, description, category, address, latitude, longitude, whatsapp, image_url } = body;
 
     if (!name || !category || !address) {
       return NextResponse.json({ error: "Nombre, categoría y dirección son requeridos" }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         whatsapp,
+        image_url: image_url || null,
         is_approved: false,
       })
       .select()

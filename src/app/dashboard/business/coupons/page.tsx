@@ -8,6 +8,7 @@ import CouponCard from "@/components/coupons/CouponCard";
 import { Plus, Ticket } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 export default function CouponsPage() {
   const { user, isLoaded } = useUser();
@@ -18,9 +19,9 @@ export default function CouponsPage() {
   useEffect(() => {
     if (!isLoaded || !user) return;
     const load = async () => {
-      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
       if (!biz) {
-        window.location.href = "/dashboard/business/settings";
+        window.location.href = "/perfil/crear-tienda";
         return;
       }
       const { data } = await supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false });

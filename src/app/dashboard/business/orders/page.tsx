@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Order, OrderStatus, PaymentMethod } from "@/types";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -108,7 +109,7 @@ export default function OrdersPage() {
       }
       if (!isLoaded || !user) return;
 
-      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
       if (!biz) { setLoaded(true); return; }
       businessIdRef.current = biz.id;
 

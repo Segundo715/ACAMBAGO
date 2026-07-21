@@ -21,26 +21,19 @@ export default function OnboardingPage() {
     if (!user) { router.replace("/login"); return; }
 
     const setup = async () => {
-      const pendingRole =
-        (typeof window !== "undefined"
-          ? localStorage.getItem("pending_role")
-          : null) ?? "client";
-
-      localStorage.removeItem("pending_role");
-
       if (!IS_DEMO) {
         const supabase = createClient();
         await supabase.from("profiles").upsert(
           {
             id: user.id,
             name: user.fullName ?? user.firstName ?? "Usuario",
-            role: pendingRole,
+            role: "client",
           },
           { onConflict: "id", ignoreDuplicates: true }
         );
       }
 
-      router.replace(pendingRole === "business" ? "/dashboard/business" : "/perfil");
+      router.replace("/perfil");
     };
 
     setup();

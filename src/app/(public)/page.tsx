@@ -168,7 +168,7 @@ export default async function HomePage({
             <Link href="#productos" className="bg-white text-brand-800 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm flex items-center gap-2 shadow-lg">
               <Package className="w-4 h-4" /> Ver productos
             </Link>
-            <Link href="/register?role=business" className="bg-brand-500/20 hover:bg-brand-500/30 border border-brand-400/50 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm flex items-center gap-2">
+            <Link href="/perfil/crear-tienda" className="bg-brand-500/20 hover:bg-brand-500/30 border border-brand-400/50 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm flex items-center gap-2">
               Publicar mi tienda <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -292,7 +292,7 @@ export default async function HomePage({
               <p className="text-brand-100 mb-7 max-w-xl mx-auto relative z-10">
                 Publica tus productos gratis y llega a más clientes con cupones digitales y perfil propio.
               </p>
-              <Link href="/register?role=business"
+              <Link href="/perfil/crear-tienda"
                 className="bg-white text-brand-800 font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-colors inline-flex items-center gap-2 relative z-10">
                 Publicar mi tienda gratis <ArrowRight className="w-4 h-4" />
               </Link>

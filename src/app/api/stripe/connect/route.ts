@@ -6,17 +6,23 @@ import { getStripe } from "@/lib/stripe/server";
 // Crea (si hace falta) la cuenta conectada Express del negocio del vendedor
 // y devuelve el link de onboarding de Stripe. Cada negocio tiene su propia
 // cuenta, así el dinero de sus ventas cae ahí, no en una cuenta de AcambaGo.
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const { business_id } = await request.json().catch(() => ({ business_id: undefined }));
+    if (!business_id) {
+      return NextResponse.json({ error: "Falta el id del negocio" }, { status: 400 });
+    }
+
     const supabase = await createClient();
     const { data: business, error } = await supabase
       .from("businesses")
       .select("id, name, stripe_account_id")
+      .eq("id", business_id)
       .eq("owner_id", userId)
       .single();
 
@@ -45,8 +51,8 @@ export async function POST() {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${appUrl}/dashboard/business/settings?stripe_refresh=1`,
-      return_url: `${appUrl}/dashboard/business/settings?stripe_return=1`,
+      refresh_url: `${appUrl}/dashboard/business/settings?stripe_refresh=1&business_id=${business.id}`,
+      return_url: `${appUrl}/dashboard/business/settings?stripe_return=1&business_id=${business.id}`,
       type: "account_onboarding",
     });
 
@@ -59,17 +65,23 @@ export async function POST() {
 
 // Se llama al volver del onboarding para refrescar si Stripe ya habilitó
 // los cobros de esa cuenta conectada.
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
+    const businessId = new URL(request.url).searchParams.get("business_id");
+    if (!businessId) {
+      return NextResponse.json({ error: "Falta el id del negocio" }, { status: 400 });
+    }
+
     const supabase = await createClient();
     const { data: business, error } = await supabase
       .from("businesses")
       .select("id, stripe_account_id")
+      .eq("id", businessId)
       .eq("owner_id", userId)
       .single();
 

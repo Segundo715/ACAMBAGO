@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Review } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { loadOwnedBusinesses } from "@/lib/current-business";
 
 const STAR_FILTERS = [0, 5, 4, 3, 2, 1] as const;
 
@@ -36,7 +37,7 @@ export default function ReviewsPage() {
     if (!isLoaded || !user) return;
 
     const load = async () => {
-      const { data: biz } = await supabase.from("businesses").select("id").eq("owner_id", user.id).single();
+      const { active: biz } = await loadOwnedBusinesses(supabase, user.id);
       if (!biz) { setLoading(false); return; }
 
       const { data } = await supabase

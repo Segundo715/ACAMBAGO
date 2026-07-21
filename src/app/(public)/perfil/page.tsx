@@ -344,6 +344,21 @@ export default function PerfilPage() {
         )}
       </div>
 
+      {/* Crear tienda */}
+      <Link
+        href="/perfil/crear-tienda"
+        className="card p-5 flex items-center gap-3 border-l-4 border-l-brand-500 hover:shadow-md transition-all"
+      >
+        <div className="w-11 h-11 bg-brand-50 dark:bg-brand-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-900 dark:text-white text-sm">Crear tienda</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Publica tu negocio y empieza a vender en Acom-Di</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+      </Link>
+
       {/* Account links */}
       <div className="card divide-y divide-slate-100 dark:divide-white/10 overflow-hidden">
         {[

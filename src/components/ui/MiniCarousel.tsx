@@ -41,26 +41,26 @@ export default function MiniCarousel({ images, name }: { images: string[]; name:
       <Image src={images[selected]} alt={name} fill className="object-cover" />
       {images.length > 1 && (
         <>
-          <span className="absolute top-0.5 right-0.5 text-[8px] font-semibold bg-black/60 text-white px-1 rounded-full leading-tight">
+          <span className="absolute top-2 right-2 text-xs font-semibold bg-black/60 text-white px-1.5 py-0.5 rounded-full leading-tight">
             {selected + 1}/{images.length}
           </span>
           <button
             onClick={prev}
             aria-label="Foto anterior"
-            className="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 bg-black/50 rounded-full flex items-center justify-center"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
           >
-            <ChevronLeft className="w-2.5 h-2.5 text-white" />
+            <ChevronLeft className="w-4 h-4 text-white" />
           </button>
           <button
             onClick={next}
             aria-label="Foto siguiente"
-            className="absolute right-0.5 top-1/2 -translate-y-1/2 w-4 h-4 bg-black/50 rounded-full flex items-center justify-center"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors pointer-events-auto"
           >
-            <ChevronRight className="w-2.5 h-2.5 text-white" />
+            <ChevronRight className="w-4 h-4 text-white" />
           </button>
-          <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, i) => (
-              <span key={i} className={`h-1 rounded-full transition-all ${i === selected ? "bg-white w-2" : "bg-white/60 w-1"}`} />
+              <span key={i} className={`h-1.5 rounded-full transition-all ${i === selected ? "bg-white w-3" : "bg-white/60 w-1.5"}`} />
             ))}
           </div>
         </>

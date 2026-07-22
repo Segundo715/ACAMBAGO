@@ -20,7 +20,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   return (
     <>
       <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-full max-w-sm z-50 flex flex-col border-l border-slate-200 dark:border-white/10 bg-white dark:bg-[#060e18]/97">
+      <div className="fixed right-0 top-0 h-full w-full max-w-sm z-50 flex flex-col border-l border-slate-200 dark:border-white/10 bg-white dark:bg-[#060e18]/95">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-2">

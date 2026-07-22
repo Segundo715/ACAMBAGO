@@ -137,7 +137,7 @@ export default function NewCouponPage() {
                 <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
                 {description && <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{description}</p>}
                 <div className="mt-3 bg-gray-50 dark:bg-white/5 rounded-xl p-4 flex flex-col items-center gap-2">
-                  <QRCodeSVG value={JSON.stringify({ coupon_code: "ACAM-PREVIEW", business_id: "preview" })} size={150} />
+                  <QRCodeSVG value={JSON.stringify({ coupon_code: "ACAM-PREVIEW", business_id: "preview" })} size={180} />
                   <p className="text-xs text-gray-400 dark:text-slate-500 font-mono">ACAM-XXXXXX</p>
                   <p className="text-xs text-gray-400 dark:text-slate-500">Se generará al guardar</p>
                 </div>

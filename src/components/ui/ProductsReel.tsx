@@ -18,9 +18,9 @@ interface ReelItem {
   business_category: string;
 }
 
-function ReelCard({ item }: { item: ReelItem }) {
+function ReelCard({ item, fixedWidth = true }: { item: ReelItem; fixedWidth?: boolean }) {
   return (
-    <div className="w-56 flex-shrink-0 card group hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/40 dark:hover:bg-white/10 transition-all duration-200 relative">
+    <div className={`${fixedWidth ? "w-56 flex-shrink-0" : "w-full"} card group hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/40 dark:hover:bg-white/10 transition-all duration-200 relative`}>
       {/* Enlace invisible que cubre toda la card excepto el botón */}
       <Link
         href={`/product/${item.id}`}
@@ -28,7 +28,7 @@ function ReelCard({ item }: { item: ReelItem }) {
         aria-label={`Ver ${item.name}`}
       />
 
-      <div className="relative h-44 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/50 dark:to-brand-800/50 overflow-hidden">
+      <div className="relative h-32 sm:h-44 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/50 dark:to-brand-800/50 overflow-hidden">
         <Image
           src={item.image}
           alt={item.name}
@@ -44,7 +44,7 @@ function ReelCard({ item }: { item: ReelItem }) {
         <FavoriteButton productId={item.id} />
       </div>
 
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <p className="text-xs text-slate-500 dark:text-gray-500 mb-1 truncate">{item.business_name}</p>
         <h3 className="font-semibold text-slate-900 dark:text-white text-sm line-clamp-2 leading-snug mb-2">{item.name}</h3>
         <p className="text-brand-600 dark:text-brand-400 font-bold text-base mb-3">{formatPrice(item.price)}</p>
@@ -94,9 +94,9 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
 
   if (items.length < MIN_ITEMS_FOR_LOOP) {
     return (
-      <div className="flex gap-5 flex-wrap px-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 px-4">
         {items.map((item) => (
-          <ReelCard key={item.id} item={item} />
+          <ReelCard key={item.id} item={item} fixedWidth={false} />
         ))}
       </div>
     );

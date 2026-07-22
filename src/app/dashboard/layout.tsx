@@ -8,7 +8,7 @@ import UserInfo from "@/components/ui/UserInfo";
 import DashboardNav from "./DashboardNav";
 import DemoBanner from "@/components/ui/DemoBanner";
 import PendingApprovalGate from "./PendingApprovalGate";
-import { Store, ShoppingBag } from "lucide-react";
+import { Store, ShoppingBag, LayoutDashboard, Package, Ticket, Settings } from "lucide-react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
@@ -106,15 +106,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile bottom nav */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-white/10 flex z-40 bg-white/95 dark:bg-[#040a14]/95 backdrop-blur-md">
           {[
-            { href: "/dashboard/business",              label: "Inicio",    icon: "📊" },
-            { href: "/dashboard/business/products",     label: "Productos", icon: "📦" },
-            { href: "/dashboard/business/orders",       label: "Pedidos",   icon: "🛒" },
-            { href: "/dashboard/business/coupons",      label: "Cupones",   icon: "🎟️" },
-            { href: "/dashboard/business/settings",     label: "Config.",   icon: "⚙️" },
-          ].map(({ href, label, icon }) => (
+            { href: "/dashboard/business",              label: "Inicio",    icon: LayoutDashboard },
+            { href: "/dashboard/business/products",     label: "Productos", icon: Package },
+            { href: "/dashboard/business/orders",       label: "Pedidos",   icon: ShoppingBag },
+            { href: "/dashboard/business/coupons",      label: "Cupones",   icon: Ticket },
+            { href: "/dashboard/business/settings",     label: "Config.",   icon: Settings },
+          ].map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}
               className="flex-1 flex flex-col items-center gap-1 py-2.5 text-slate-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors">
-              <span className="text-lg leading-none">{icon}</span>
+              <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           ))}

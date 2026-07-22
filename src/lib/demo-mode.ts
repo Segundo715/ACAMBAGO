@@ -1,6 +1,7 @@
 // Demo Mode: cuentas ficticias para probar la app sin Clerk/Supabase real.
-// Para desactivar: borrar este archivo y revertir los cambios en proxy.ts,
-// use-auth-user.ts, DemoLoginButtons.tsx y DemoBanner.tsx.
+// Ya no tiene botones de entrada en /login (se quitaron a pedido); la cookie
+// demo_mode solo se sigue leyendo por proxy.ts/use-auth-user.ts/DemoBanner.tsx
+// por si se necesita reactivar el acceso mas adelante.
 
 export type DemoRole = "buyer" | "seller";
 
@@ -201,11 +202,6 @@ export function getDemoMode(): DemoRole | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/demo_mode=([^;]+)/);
   return (match?.[1] as DemoRole) ?? null;
-}
-
-export function startDemoMode(role: DemoRole): void {
-  document.cookie = `demo_mode=${role}; path=/; max-age=86400; SameSite=Lax`;
-  window.location.href = role === "buyer" ? "/perfil" : "/dashboard/business";
 }
 
 export function stopDemoMode(): void {

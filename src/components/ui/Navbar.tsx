@@ -2,17 +2,23 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, X, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User } from "lucide-react";
+import { Menu, X, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import ThemeToggle from "./ThemeToggle";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
+import { createClient } from "@/lib/supabase/client";
+import { loadOwnedBusinesses, setCurrentBusinessId } from "@/lib/current-business";
+import { Business } from "@/types";
 import { useClerk } from "@clerk/nextjs";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
   const { count, openCart } = useCart();
   const { userId, name, role, loading } = useAuthUser();
   const { signOut } = useClerk();
@@ -28,8 +34,39 @@ export default function Navbar() {
 
   const dashboardHref = role === "admin" ? "/admin" : "/dashboard/business";
 
+  useEffect(() => {
+    if (role !== "business" || !userId || getDemoMode()) return;
+    const supabase = createClient();
+    loadOwnedBusinesses(supabase, userId).then(({ businesses, active }) => {
+      setBusinesses(businesses);
+      setActiveBusinessId(active?.id ?? null);
+    });
+  }, [role, userId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
+
+  const switchStore = (id: string) => {
+    setMenuOpen(false);
+    if (id === activeBusinessId) {
+      router.push("/dashboard/business");
+      return;
+    }
+    setCurrentBusinessId(id);
+    // Recarga completa (no solo navegación) para que todas las páginas del
+    // panel vuelvan a pedir datos con la tienda nueva, igual que el switcher
+    // de escritorio en UserInfo.tsx.
+    window.location.assign("/dashboard/business");
+  };
+
   return (
-    <nav className="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm dark:bg-[#050e18]/75 dark:border-white/10 dark:shadow-none">
+    <nav ref={navRef} className="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm dark:bg-[#050e18]/75 dark:border-white/10 dark:shadow-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
@@ -83,7 +120,11 @@ export default function Navbar() {
             user ? (
               <>
                 {/* Info usuario */}
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5">
+                <Link
+                  href="/perfil"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+                >
                   <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0">
                     {role === "business"
                       ? <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
@@ -94,7 +135,44 @@ export default function Navbar() {
                     <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{name ?? "Usuario"}</p>
                     <p className="text-[10px] text-slate-400 capitalize">{role ?? "usuario"}</p>
                   </div>
-                </div>
+                </Link>
+
+                {role === "business" && businesses.length > 0 && (
+                  <div className="px-1">
+                    <p className="text-[10px] font-semibold uppercase text-slate-400 px-2 pt-1 pb-1">Cambiar de tienda</p>
+                    {businesses.map((b) => {
+                      const isActive = b.id === activeBusinessId;
+                      return (
+                        <button
+                          key={b.id}
+                          onClick={() => switchStore(b.id)}
+                          className={`flex items-center gap-2.5 w-full py-2 px-3 rounded-xl text-sm transition-colors ${
+                            isActive
+                              ? "bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300 font-semibold"
+                              : "text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/10"
+                          }`}
+                        >
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0 relative">
+                            {b.image_url ? (
+                              <Image src={b.image_url} alt={b.name} fill className="object-cover" />
+                            ) : (
+                              <Store className="w-3 h-3 text-brand-600 dark:text-brand-400" />
+                            )}
+                          </div>
+                          <span className="truncate flex-1 text-left">{b.name}</span>
+                          {isActive && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                    <Link
+                      href="/perfil/crear-tienda"
+                      className="flex items-center gap-2 py-2 px-3 rounded-xl text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Plus className="w-3.5 h-3.5 flex-shrink-0" /> Agregar otra tienda
+                    </Link>
+                  </div>
+                )}
 
                 <Link
                   href={dashboardHref}

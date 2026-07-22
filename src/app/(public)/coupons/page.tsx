@@ -49,8 +49,8 @@ function CouponCard({ coupon }: { coupon: CouponWithBusiness }) {
   const discountLabel = isPercent ? `${coupon.value}% OFF` : `$${coupon.value} OFF`;
   const expires = coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : null;
 
-  return (
-    <div className="card overflow-hidden group hover:shadow-lg transition-all">
+  const cardContent = (
+    <>
       {/* Header con degradado */}
       <div className="relative h-24 bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center">
         <div className="absolute inset-0 opacity-10">
@@ -75,13 +75,10 @@ function CouponCard({ coupon }: { coupon: CouponWithBusiness }) {
         </div>
 
         {business && (
-          <Link
-            href={`/business/${business.id}`}
-            className="flex items-center gap-2 text-xs text-brand-600 dark:text-brand-400 hover:underline"
-          >
+          <div className="flex items-center gap-2 text-xs text-brand-600 dark:text-brand-400 group-hover:underline">
             <Store className="w-3 h-3 flex-shrink-0" />
             {business.name}
-          </Link>
+          </div>
         )}
 
         <div className="flex items-center justify-between pt-1">
@@ -106,8 +103,18 @@ function CouponCard({ coupon }: { coupon: CouponWithBusiness }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
+
+  if (business) {
+    return (
+      <Link href={`/business/${business.id}`} className="card overflow-hidden group hover:shadow-lg transition-all block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return <div className="card overflow-hidden group hover:shadow-lg transition-all">{cardContent}</div>;
 }
 
 export const revalidate = 30;

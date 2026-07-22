@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
-import { Order, OrderStatus } from "@/types";
+import { Order, OrderStatus, CATEGORY_ICONS } from "@/types";
 import {
   getDemoMode,
   DEMO_BUYER,
@@ -29,6 +29,18 @@ interface Redemption {
   id: string;
   redeemed_at: string;
   coupons: { title: string; value: number; discount_type: string; businesses: { name: string } };
+}
+
+interface FavoriteStore {
+  id: string;
+  name: string;
+  category: string;
+  rating: number;
+  emoji: string;
+}
+
+interface FavoriteRow {
+  products: { business_id: string; businesses: { id: string; name: string; category: string; rating_avg: number } | null } | null;
 }
 
 type BuyerOrder = Order & { businesses: { name: string } | null };
@@ -58,6 +70,7 @@ export default function PerfilPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [ordersCount, setOrdersCount] = useState(0);
+  const [favoriteStores, setFavoriteStores] = useState<FavoriteStore[]>([]);
   const [originalPhone, setOriginalPhone] = useState("");
   const [verifyingPhone, setVerifyingPhone] = useState(false);
   const [pendingPhoneResource, setPendingPhoneResource] = useState<Awaited<ReturnType<NonNullable<typeof user>["createPhoneNumber"]>> | null>(null);
@@ -115,6 +128,22 @@ export default function PerfilPage() {
 
       setOrders((myOrders ?? []) as unknown as BuyerOrder[]);
       setOrdersCount(count ?? 0);
+
+      const { data: favRows } = await supabase
+        .from("product_favorites")
+        .select("products(business_id, businesses(id, name, category, rating_avg))")
+        .eq("user_id", user.id);
+
+      const seen = new Set<string>();
+      const stores: FavoriteStore[] = [];
+      for (const row of (favRows ?? []) as unknown as FavoriteRow[]) {
+        const b = row.products?.businesses;
+        if (!b || seen.has(b.id)) continue;
+        seen.add(b.id);
+        stores.push({ id: b.id, name: b.name, category: b.category, rating: Number(b.rating_avg) || 0, emoji: CATEGORY_ICONS[b.category] ?? "🏪" });
+      }
+      setFavoriteStores(stores);
+
       setLoading(false);
     };
     load();
@@ -361,7 +390,7 @@ export default function PerfilPage() {
       <div className="grid grid-cols-3 gap-3">
         {[
           { icon: ShoppingBag, label: "Pedidos",   value: demoMode ? DEMO_MY_ORDERS.length : (IS_DEMO ? DEMO_MY_ORDERS.length : ordersCount), color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-blue-500/10" },
-          { icon: Heart,       label: "Favoritos", value: DEMO_FAVORITES.length, color: "text-red-500 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/10" },
+          { icon: Heart,       label: "Favoritos", value: demoMode ? DEMO_FAVORITES.length : (IS_DEMO ? DEMO_FAVORITES.length : favoriteStores.length), color: "text-red-500 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/10" },
           { icon: Ticket,      label: "Cupones",   value: demoMode ? DEMO_BUYER_COUPONS.length : (IS_DEMO ? 2 : redemptions.length), color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
         ].map(({ icon: Icon, label, value, color, bg }) => (
           <div key={label} className="card p-4 text-center">
@@ -432,29 +461,37 @@ export default function PerfilPage() {
           <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500 fill-red-500" /> Tiendas favoritas
           </h2>
-          <span className="text-xs text-slate-400">Demo</span>
+          {(demoMode || IS_DEMO) && <span className="text-xs text-slate-400">Demo</span>}
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-white/10">
-          {DEMO_FAVORITES.map((s) => (
-            <Link key={s.id} href={`/business/${s.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                {s.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 dark:text-white">{s.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> {s.category}
-                  </span>
-                  <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-0.5">
-                    <Star className="w-3 h-3 fill-current" /> {s.rating}
-                  </span>
+        {(demoMode || IS_DEMO ? DEMO_FAVORITES : favoriteStores).length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <Heart className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Todavía no tienes tiendas favoritas.</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Marca productos con el corazón para agregar su tienda aquí.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-white/10">
+            {(demoMode || IS_DEMO ? DEMO_FAVORITES : favoriteStores).map((s) => (
+              <Link key={s.id} href={`/business/${s.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <div className="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                  {s.emoji}
                 </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
-            </Link>
-          ))}
-        </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{s.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {s.category}
+                    </span>
+                    <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-0.5">
+                      <Star className="w-3 h-3 fill-current" /> {s.rating}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Redeemed coupons */}

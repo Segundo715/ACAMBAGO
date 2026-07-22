@@ -13,7 +13,7 @@ export const clerkAppearance: any = {
   },
   elements: {
     rootBox: "w-full",
-    card: "bg-[#0d1b2e] border border-white/10 shadow-2xl rounded-2xl",
+    card: "bg-[#0d1b2e] border border-white/10 border-b-0 shadow-2xl rounded-t-2xl",
 
     headerTitle: "text-white text-2xl font-bold",
     headerSubtitle: "text-slate-300",
@@ -75,8 +75,9 @@ export const clerkAppearance: any = {
     alert: "!bg-red-500/10 !border-red-500/20 rounded-xl",
     alertText: "text-red-400",
 
-    /* Footer */
-    footer: "!bg-transparent",
+    /* Footer — pegado justo debajo de la tarjeta, mismo fondo/borde, para
+       que se vea como una sola tarjeta y no como un bloque suelto abajo. */
+    footer: "!bg-[#0d1b2e] border border-white/10 border-t-0 rounded-b-2xl shadow-2xl pb-5",
     footerPages: "text-slate-400",
     footerPagesLink: "!text-blue-400 hover:!text-blue-300",
 

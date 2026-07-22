@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Business } from "@/types";
 import { MapPin, Star, Tag } from "lucide-react";
+import BusinessFavoriteButton from "@/components/ui/BusinessFavoriteButton";
 
 interface Props {
   business: Business;
@@ -28,6 +29,7 @@ export default function BusinessCard({ business }: Props) {
     "demo-jugueteria":  "/business/demo-jugueteria",
   };
   const href = demoSlugs[business.id] ?? `/business/${business.id}`;
+  const isDemo = business.id.startsWith("demo");
 
   return (
     <Link href={href}>
@@ -53,6 +55,7 @@ export default function BusinessCard({ business }: Props) {
               {business.category}
             </span>
           </div>
+          {!isDemo && <BusinessFavoriteButton businessId={business.id} />}
         </div>
 
         {/* Contenido */}

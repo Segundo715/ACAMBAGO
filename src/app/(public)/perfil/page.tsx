@@ -40,7 +40,7 @@ interface FavoriteStore {
 }
 
 interface FavoriteRow {
-  products: { business_id: string; businesses: { id: string; name: string; category: string; rating_avg: number } | null } | null;
+  businesses: { id: string; name: string; category: string; rating_avg: number } | null;
 }
 
 type BuyerOrder = Order & { businesses: { name: string } | null };
@@ -130,16 +130,15 @@ export default function PerfilPage() {
       setOrdersCount(count ?? 0);
 
       const { data: favRows } = await supabase
-        .from("product_favorites")
-        .select("products(business_id, businesses(id, name, category, rating_avg))")
-        .eq("user_id", user.id);
+        .from("business_favorites")
+        .select("businesses(id, name, category, rating_avg)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      const seen = new Set<string>();
       const stores: FavoriteStore[] = [];
       for (const row of (favRows ?? []) as unknown as FavoriteRow[]) {
-        const b = row.products?.businesses;
-        if (!b || seen.has(b.id)) continue;
-        seen.add(b.id);
+        const b = row.businesses;
+        if (!b) continue;
         stores.push({ id: b.id, name: b.name, category: b.category, rating: Number(b.rating_avg) || 0, emoji: CATEGORY_ICONS[b.category] ?? "🏪" });
       }
       setFavoriteStores(stores);
@@ -467,7 +466,7 @@ export default function PerfilPage() {
           <div className="px-5 py-10 text-center">
             <Heart className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
             <p className="text-slate-500 dark:text-slate-400 text-sm">Todavía no tienes tiendas favoritas.</p>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Marca productos con el corazón para agregar su tienda aquí.</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Toca el corazón en una tienda para agregarla aquí.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-white/10">

@@ -15,6 +15,7 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
             <button
               key={i}
               onClick={() => setSelected(i)}
+              onMouseEnter={() => setSelected(i)}
               className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
                 i === selected
                   ? "border-brand-500 opacity-100 shadow-sm"

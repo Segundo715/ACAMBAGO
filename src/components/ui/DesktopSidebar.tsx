@@ -18,7 +18,7 @@ const navItems = [
   { href: "/coupons",     label: "Cupones",    icon: Ticket,     exact: false },
 ];
 
-export default function DesktopSidebar() {
+export default function DesktopSidebar({ hidden }: { hidden: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const { count, openCart } = useCart();
@@ -35,7 +35,11 @@ export default function DesktopSidebar() {
   const dashboardHref = role === "admin" ? "/admin" : role === "client" ? "/perfil" : "/dashboard/business";
 
   return (
-    <aside className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-50 bg-white/90 dark:bg-[#050e18]/90 backdrop-blur-md border-r border-slate-200 dark:border-white/10">
+    <aside
+      className={`hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-50 bg-white/90 dark:bg-[#050e18]/90 backdrop-blur-md border-r border-slate-200 dark:border-white/10 transition-transform duration-200 ${
+        hidden ? "md:-translate-x-full" : "md:translate-x-0"
+      }`}
+    >
       {/* Logo */}
       <div className="p-5 border-b border-slate-200 dark:border-white/10">
         <Link href="/" className="flex items-center">

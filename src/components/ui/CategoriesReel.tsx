@@ -36,6 +36,7 @@ export default function CategoriesReel({ items }: { items: CategoryItem[] }) {
   const draggingRef = useRef(false);
   const dragStartX = useRef(0);
   const dragStartScroll = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -56,21 +57,34 @@ export default function CategoriesReel({ items }: { items: CategoryItem[] }) {
 
   const doubled = [...items, ...items];
 
+  // No se captura el puntero en pointerdown: si se hiciera de inmediato,
+  // hasta un simple clic secuestraría el evento hacia este contenedor y
+  // nunca llegaría al Link de la categoría. Solo se activa el arrastre
+  // (y ahí se captura el puntero) cuando el mouse se mueve más de un
+  // pequeño umbral.
+  const DRAG_THRESHOLD = 6;
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     pausedRef.current = true;
     if (e.pointerType === "mouse" && scrollerRef.current) {
-      draggingRef.current = true;
       dragStartX.current = e.clientX;
       dragStartScroll.current = scrollerRef.current.scrollLeft;
-      scrollerRef.current.setPointerCapture(e.pointerId);
+      pointerIdRef.current = e.pointerId;
     }
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || !scrollerRef.current) return;
-    scrollerRef.current.scrollLeft = dragStartScroll.current - (e.clientX - dragStartX.current);
+    if (pointerIdRef.current === null || !scrollerRef.current) return;
+    const delta = e.clientX - dragStartX.current;
+    if (!draggingRef.current) {
+      if (Math.abs(delta) < DRAG_THRESHOLD) return;
+      draggingRef.current = true;
+      scrollerRef.current.setPointerCapture(pointerIdRef.current);
+    }
+    scrollerRef.current.scrollLeft = dragStartScroll.current - delta;
   };
   const endInteraction = () => {
     draggingRef.current = false;
+    pointerIdRef.current = null;
     pausedRef.current = false;
   };
 

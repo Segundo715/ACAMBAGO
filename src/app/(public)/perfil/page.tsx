@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { Order, OrderStatus, CATEGORY_ICONS } from "@/types";
 import {
@@ -160,6 +161,7 @@ export default function PerfilPage() {
         (payload) => {
           const updated = payload.new as Order;
           setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+          playNotificationSound();
           toast.success(`Tu pedido cambió a "${updated.status.replace("_", " ")}"`, { icon: "📦" });
         }
       )

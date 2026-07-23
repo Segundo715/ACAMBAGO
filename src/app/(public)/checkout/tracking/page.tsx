@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock, Package, Truck, MapPin, Phone, Star, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { playNotificationSound } from "@/lib/notification-sound";
 import { Order } from "@/types";
 
 const TRACKING_STEPS = [
@@ -130,6 +131,7 @@ function TrackingContent() {
         { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
         (payload) => {
           setRealOrder((prev) => (prev ? { ...prev, ...(payload.new as Order) } : prev));
+          playNotificationSound();
         }
       )
       .subscribe();

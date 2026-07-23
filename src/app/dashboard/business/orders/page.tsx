@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Order, OrderStatus, PaymentMethod } from "@/types";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { loadOwnedBusinesses } from "@/lib/current-business";
+import { playNotificationSound } from "@/lib/notification-sound";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -66,28 +67,6 @@ function orderToRow(o: Order): OrderRow {
     address: o.delivery_method === "home" ? (o.address?.street ?? "") : o.delivery_method === "meeting" ? "Punto de reunión" : "Recoger en tienda",
     payment_method: o.payment_method,
   };
-}
-
-// Beep corto generado con Web Audio API — no depende de ningún archivo de audio.
-function playNotificationSound() {
-  try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioContextClass();
-    [0, 0.15].forEach((delay) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.15, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.13);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.13);
-    });
-  } catch {
-    // Si el navegador bloquea audio sin interacción previa, se ignora en silencio.
-  }
 }
 
 export default function OrdersPage() {

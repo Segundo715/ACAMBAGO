@@ -4,8 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, X, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
-import { useCart } from "@/lib/cart-context";
+import { Menu, X, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
@@ -19,7 +18,6 @@ export default function Navbar() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
-  const { count, openCart } = useCart();
   const { userId, name, role, loading } = useAuthUser();
   const { signOut } = useClerk();
   const router = useRouter();
@@ -77,21 +75,9 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Mobile: theme + cart + hamburger */}
+          {/* Mobile: theme + hamburger (el carrito ya vive en la barra inferior) */}
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <button
-              onClick={openCart}
-              className="relative p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-              aria-label="Carrito"
-            >
-              <ShoppingCart className="w-5 h-5 text-slate-600 dark:text-gray-200" />
-              {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-brand-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
-                  {count}
-                </span>
-              )}
-            </button>
             <button
               className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}

@@ -1,6 +1,6 @@
 import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "@/components/ui/ProductsReel";
-import SearchBar from "@/components/ui/SearchBar";
+import HeroCarousel from "@/components/ui/HeroCarousel";
 import DragScroll from "@/components/ui/DragScroll";
 import CategoriesReel from "@/components/ui/CategoriesReel";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
@@ -13,8 +13,7 @@ import {
 
 const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
 import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store, LayoutGrid } from "lucide-react";
+import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store, LayoutGrid, Clock, Coins, TrendingUp, Lock } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
@@ -140,44 +139,8 @@ export default async function HomePage({
 
   return (
     <>
-      {/* ── Hero ── */}
-      <section className="text-white overflow-hidden relative">
-        <Image src="/hero-iglesia.jpg" alt="Parroquia de San Francisco de Asís, Acámbaro" fill className="object-cover object-center" priority />
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/95 via-[#060e18]/90 to-brand-800/85" />
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-10 left-10 w-48 h-48 bg-brand-400 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-10 right-10 w-64 h-64 bg-brand-600 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 py-20 md:py-32 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 rounded-full text-sm font-medium mb-5">
-            <MapPin className="w-4 h-4 text-brand-300" />
-            Acámbaro, Guanajuato
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-            Compra local,<br />
-            <span className="text-brand-300">apoya tu ciudad</span>
-          </h1>
-          <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-8">
-            El marketplace de productos locales de Acámbaro. Encuentra lo que necesitas en tiendas de tu comunidad.
-          </p>
-
-          <SearchBar defaultValue={params.q} />
-
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link href="#productos" className="bg-white text-brand-800 font-semibold px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm flex items-center gap-2 shadow-lg">
-              <Package className="w-4 h-4" /> Ver productos
-            </Link>
-            <Link href="/perfil/crear-tienda" className="bg-brand-500/20 hover:bg-brand-500/30 border border-brand-400/50 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm flex items-center gap-2">
-              Publicar mi tienda <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-center gap-1.5 mt-10 text-sm text-gray-400">
-            <Star className="w-4 h-4 text-brand-400 fill-brand-400" />{totalCount} tiendas activas en Acámbaro
-          </div>
-        </div>
-      </section>
+      {/* ── Hero: carrusel estilo Mercado Libre ── */}
+      <HeroCarousel defaultSearch={params.q} totalCount={totalCount} />
 
       {/* ── Accesos rápidos, estilo Mercado Libre ── */}
       <section className="bg-white dark:bg-[#050e18] py-8 md:py-10 border-b border-slate-100 dark:border-white/5">
@@ -188,11 +151,17 @@ export default async function HomePage({
               { icon: ShieldCheck, title: "Negocios verificados", desc: "Todos pasan revisión antes de publicarse", cta: "Ver tiendas", href: "#tiendas" },
               { icon: MapPin, title: "Mapa interactivo", desc: "Encuentra negocios cerca de ti", cta: "Ver mapa", href: "/map" },
               { icon: LayoutGrid, title: "Categorías", desc: "Explora por tipo de negocio", cta: "Ver categorías", href: "#categorias" },
-              { icon: Package, title: "Productos Destacados", desc: "Lo más vendido de las tiendas locales", cta: "Ver productos", href: "#productos" },
+              { icon: Package, title: "Productos Destacados", desc: "Selección variada de las tiendas locales", cta: "Ver productos", href: "#productos" },
               { icon: Store, title: "Publica tu tienda", desc: "Vende tus productos gratis en Acámbaro", cta: "Publicar tienda", href: "/perfil/crear-tienda" },
+              { icon: Clock, title: "Vistos recientemente", desc: "Los productos que viste en este navegador", cta: "Ver historial", href: "/vistos-recientemente" },
+              { icon: Coins, title: "Menos de $500", desc: "Productos con precios bajos", cta: "Mostrar productos", href: "/menos-de-500" },
+              { icon: TrendingUp, title: "Más vendidos", desc: "Ranking real por ventas de las tiendas", cta: "Ir a más vendidos", href: "/mas-vendidos" },
+              { icon: Truck, title: "Entrega a domicilio", desc: "Muchos negocios entregan directo en Acámbaro", cta: "Ver tiendas", href: "#tiendas" },
+              { icon: Lock, title: "Pago seguro", desc: "Paga con Mercado Pago o tarjeta, protegido", cta: "Cómo funciona", href: "#tiendas" },
             ].map((item) => (
-              <div
+              <Link
                 key={item.title}
+                href={item.href}
                 className="border border-slate-200 dark:border-white/10 rounded-xl p-5 flex flex-col items-center text-center gap-3 hover:shadow-md hover:border-slate-300 dark:hover:border-white/20 transition-all"
               >
                 <p className="font-semibold text-slate-900 dark:text-white text-sm">{item.title}</p>
@@ -200,13 +169,10 @@ export default async function HomePage({
                   <item.icon className="w-9 h-9 text-brand-600 dark:text-brand-400" />
                 </div>
                 <p className="text-xs text-slate-500 dark:text-gray-400 leading-snug flex-1">{item.desc}</p>
-                <Link
-                  href={item.href}
-                  className="text-xs font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 px-4 py-2 rounded-lg transition-colors w-full"
-                >
+                <span className="text-xs font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 px-4 py-2 rounded-lg w-full">
                   {item.cta}
-                </Link>
-              </div>
+                </span>
+              </Link>
             ))}
           </div>
         </div>

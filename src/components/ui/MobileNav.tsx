@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Search, Ticket, ShoppingCart, User, Store } from "lucide-react";
+import { Home, Search, Ticket, ShoppingCart, User, Store, Menu } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 
@@ -12,17 +12,17 @@ export default function MobileNav() {
   const { userId, role } = useAuthUser();
 
   const perfilHref = userId
-    ? role === "admin" ? "/admin" : role === "client" ? "/perfil" : "/dashboard/business"
+    ? role === "admin" ? "/admin" : role === "client" ? "/mas" : "/dashboard/business"
     : "/login";
 
-  const PerfilIcon = userId && role === "business" ? Store : User;
+  const PerfilIcon = !userId ? User : role === "business" ? Store : Menu;
 
   const tabs = [
     { id: "home",    label: "Inicio",   icon: Home,         href: "/",       isCart: false },
     { id: "search",  label: "Buscar",   icon: Search,       href: "/?q=",    isCart: false },
     { id: "cupones", label: "Cupones",  icon: Ticket,       href: "/coupons",isCart: false },
     { id: "cart",    label: "Carrito",  icon: ShoppingCart, href: null,      isCart: true  },
-    { id: "perfil",  label: userId ? (role === "business" ? "Tienda" : "Perfil") : "Entrar", icon: PerfilIcon, href: perfilHref, isCart: false },
+    { id: "perfil",  label: userId ? (role === "business" ? "Tienda" : "Más") : "Entrar", icon: PerfilIcon, href: perfilHref, isCart: false },
   ];
 
   return (

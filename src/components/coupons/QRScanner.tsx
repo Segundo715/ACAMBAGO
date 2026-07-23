@@ -42,8 +42,8 @@ export default function QRScanner({ onScan, onClose }: Props) {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl overflow-hidden w-full max-w-sm">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl overflow-hidden w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-brand-600" />

@@ -30,22 +30,34 @@ export default async function ProductPage({
   const { id } = await params;
 
   let product = DEMO_ALL_PRODUCTS.find((p) => p.id === id) ?? null;
+  const isDemoProduct = !!product;
+  let business = isDemoProduct ? DEMO_ALL_BUSINESSES_LIST.find((b) => b.id === product!.business_id) ?? null : null;
+  let related = isDemoProduct
+    ? DEMO_ALL_PRODUCTS.filter((p) => p.business_id === product!.business_id && p.id !== id).slice(0, 6)
+    : [];
 
-  if (!product) {
+  if (!isDemoProduct) {
     try {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
       if (url && !url.includes("your-project") && url !== "https://placeholder.supabase.co") {
         const { createClient } = await import("@/lib/supabase/server");
         const supabase = await createClient();
         const { data } = await supabase.from("products").select("*").eq("id", id).single();
-        if (data) product = data;
+        if (data) {
+          product = data;
+          const [{ data: bizData }, { data: relatedData }] = await Promise.all([
+            supabase.from("businesses").select("*").eq("id", data.business_id).single(),
+            supabase.from("products").select("*").eq("business_id", data.business_id).eq("is_available", true).neq("id", id).limit(6),
+          ]);
+          business = bizData ?? null;
+          related = relatedData ?? [];
+        }
       }
     } catch {}
   }
 
   if (!product) notFound();
 
-  const business = DEMO_ALL_BUSINESSES_LIST.find((b) => b.id === product!.business_id) ?? null;
   const extra = DEMO_PRODUCT_EXTRAS[id];
   const images = extra?.images?.length
     ? extra.images
@@ -58,10 +70,6 @@ export default async function ProductPage({
   const discount = extra?.original_price
     ? Math.round((1 - product.price / extra.original_price) * 100)
     : null;
-
-  const related = DEMO_ALL_PRODUCTS.filter(
-    (p) => p.business_id === product!.business_id && p.id !== id
-  ).slice(0, 6);
 
   const whatsappUrl = business?.whatsapp
     ? `https://wa.me/52${business.whatsapp}?text=${encodeURIComponent(`Hola, vi el producto "${product.name}" en Acom-Di y me interesa.`)}`

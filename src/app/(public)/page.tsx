@@ -14,7 +14,7 @@ import {
 const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store } from "lucide-react";
+import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Package, Truck, Store, LayoutGrid } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
@@ -173,14 +173,41 @@ export default async function HomePage({
             </Link>
           </div>
 
-          <div className="flex items-center justify-center gap-6 mt-10 text-sm text-gray-400 flex-wrap">
-            <div className="flex items-center gap-1.5"><Star className="w-4 h-4 text-brand-400 fill-brand-400" />{totalCount} tiendas activas</div>
-            <div className="flex items-center gap-1.5"><Ticket className="w-4 h-4" />Cupones con QR</div>
-            <div className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" />Negocios verificados</div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              <Link href="/map" className="hover:text-white transition-colors">Ver en mapa</Link>
-            </div>
+          <div className="flex items-center justify-center gap-1.5 mt-10 text-sm text-gray-400">
+            <Star className="w-4 h-4 text-brand-400 fill-brand-400" />{totalCount} tiendas activas en Acámbaro
+          </div>
+        </div>
+      </section>
+
+      {/* ── Accesos rápidos, estilo Mercado Libre ── */}
+      <section className="bg-white dark:bg-[#050e18] py-8 md:py-10 border-b border-slate-100 dark:border-white/5">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-5">
+            {[
+              { icon: Ticket, title: "Cupones con QR", desc: "Descuentos exclusivos en tiendas locales", cta: "Ver cupones", href: "/coupons" },
+              { icon: ShieldCheck, title: "Negocios verificados", desc: "Todos pasan revisión antes de publicarse", cta: "Ver tiendas", href: "#tiendas" },
+              { icon: MapPin, title: "Mapa interactivo", desc: "Encuentra negocios cerca de ti", cta: "Ver mapa", href: "/map" },
+              { icon: LayoutGrid, title: "Categorías", desc: "Explora por tipo de negocio", cta: "Ver categorías", href: "#categorias" },
+              { icon: Package, title: "Productos Destacados", desc: "Lo más vendido de las tiendas locales", cta: "Ver productos", href: "#productos" },
+              { icon: Store, title: "Publica tu tienda", desc: "Vende tus productos gratis en Acámbaro", cta: "Publicar tienda", href: "/perfil/crear-tienda" },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="border border-slate-200 dark:border-white/10 rounded-xl p-5 flex flex-col items-center text-center gap-3 hover:shadow-md hover:border-slate-300 dark:hover:border-white/20 transition-all"
+              >
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{item.title}</p>
+                <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center">
+                  <item.icon className="w-9 h-9 text-brand-600 dark:text-brand-400" />
+                </div>
+                <p className="text-xs text-slate-500 dark:text-gray-400 leading-snug flex-1">{item.desc}</p>
+                <Link
+                  href={item.href}
+                  className="text-xs font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 px-4 py-2 rounded-lg transition-colors w-full"
+                >
+                  {item.cta}
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>

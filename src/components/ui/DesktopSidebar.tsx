@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, LayoutGrid, Map, Ticket, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, ChevronRight } from "lucide-react";
+import { Home, Tag, LayoutGrid, Map, Ticket, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, ChevronRight, Menu } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useCart } from "@/lib/cart-context";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
@@ -32,7 +32,7 @@ export default function DesktopSidebar({ hidden }: { hidden: boolean }) {
     router.push("/");
   };
 
-  const dashboardHref = role === "admin" ? "/admin" : role === "client" ? "/perfil" : "/dashboard/business";
+  const dashboardHref = role === "admin" ? "/admin" : role === "client" ? "/mas" : "/dashboard/business";
 
   return (
     <aside
@@ -121,8 +121,8 @@ export default function DesktopSidebar({ hidden }: { hidden: boolean }) {
                   href={dashboardHref}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-all"
                 >
-                  <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-                  Mi panel
+                  {role === "client" ? <Menu className="w-5 h-5 flex-shrink-0" /> : <LayoutDashboard className="w-5 h-5 flex-shrink-0" />}
+                  {role === "client" ? "Más" : "Mi panel"}
                 </Link>
               )}
 

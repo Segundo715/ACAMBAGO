@@ -41,7 +41,7 @@ function ReelCard({ item, fixedWidth = true }: { item: ReelItem; fixedWidth?: bo
             <Tag className="w-3 h-3" />{item.business_category}
           </span>
         </div>
-        <FavoriteButton productId={item.id} />
+        {!item.business_id.startsWith("demo") && <FavoriteButton productId={item.id} />}
       </div>
 
       <div className="p-3 sm:p-4">
@@ -73,6 +73,7 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
   const draggingRef = useRef(false);
   const dragStartX = useRef(0);
   const dragStartScroll = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (items.length < MIN_ITEMS_FOR_LOOP) return;
@@ -107,21 +108,36 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
   // El toque en móvil usa el scroll nativo (con inercia); solo el mouse en
   // desktop necesita el arrastre manual, ya que overflow-x-auto no se puede
   // "jalar" con click sostenido por sí solo.
+  //
+  // Importante: NO se captura el puntero en pointerdown. Si se hiciera de
+  // inmediato, hasta un simple clic (sin arrastrar) secuestraría el evento
+  // hacia este contenedor y el clic nunca llegaría al botón "Agregar al
+  // carrito" ni al Link del producto. Solo se activa el arrastre (y recién
+  // ahí se captura el puntero) cuando el mouse se mueve más de un pequeño
+  // umbral; un clic normal nunca activa nada de esto.
+  const DRAG_THRESHOLD = 6;
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     pausedRef.current = true;
     if (e.pointerType === "mouse" && scrollerRef.current) {
-      draggingRef.current = true;
       dragStartX.current = e.clientX;
       dragStartScroll.current = scrollerRef.current.scrollLeft;
-      scrollerRef.current.setPointerCapture(e.pointerId);
+      pointerIdRef.current = e.pointerId;
     }
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || !scrollerRef.current) return;
-    scrollerRef.current.scrollLeft = dragStartScroll.current - (e.clientX - dragStartX.current);
+    if (pointerIdRef.current === null || !scrollerRef.current) return;
+    const delta = e.clientX - dragStartX.current;
+    if (!draggingRef.current) {
+      if (Math.abs(delta) < DRAG_THRESHOLD) return;
+      draggingRef.current = true;
+      scrollerRef.current.setPointerCapture(pointerIdRef.current);
+    }
+    scrollerRef.current.scrollLeft = dragStartScroll.current - delta;
   };
   const endInteraction = () => {
     draggingRef.current = false;
+    pointerIdRef.current = null;
     pausedRef.current = false;
   };
 

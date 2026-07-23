@@ -1,16 +1,16 @@
 import { Business, Product, Coupon, Review } from "@/types";
 import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
-import AddToCartButton from "@/components/ui/AddToCartButton";
 import ShareButton from "@/components/ui/ShareButton";
-import MiniCarousel from "@/components/ui/MiniCarousel";
+import ProductsReel from "@/components/ui/ProductsReel";
 import { DEMO_PRODUCT_EXTRAS } from "@/lib/demo-data";
 import { MapPin, Phone, Tag, Package, MessageSquare, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 import Image from "next/image";
-import { formatPrice } from "@/lib/utils";
+
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80";
 
 interface Props {
   business: Business;
@@ -102,53 +102,33 @@ export default function DemoBusinessPage({
         </div>
       </div>
 
+      {/* Products / Services */}
+      {products.length > 0 && (
+        <section className="mb-6 -mx-4 overflow-hidden">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 px-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-brand-600" />
+            {productLabel}
+          </h2>
+          <ProductsReel
+            items={products.map((p) => {
+              const extra = DEMO_PRODUCT_EXTRAS[p.id];
+              const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
+              return {
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                image: gallery[0] || FALLBACK_IMAGE,
+                business_id: p.business_id,
+                business_name: business.name,
+                business_category: business.category,
+              };
+            })}
+          />
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Products / Services */}
-          {products.length > 0 && (
-            <section>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-brand-600" />
-                {productLabel}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {products.map((p) => {
-                  const extra = DEMO_PRODUCT_EXTRAS[p.id];
-                  const gallery = extra?.images?.length ? extra.images : p.image_url ? [p.image_url] : [];
-                  return (
-                  <div key={p.id} className="card overflow-hidden flex flex-col relative hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all">
-                    {/* Link invisible que cubre la card, por debajo del botón */}
-                    <Link href={`/product/${p.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Ver ${p.name}`} />
-                    <div className="relative w-full h-32 sm:h-44 bg-brand-50 dark:bg-brand-500/10 flex-shrink-0 overflow-hidden pointer-events-none">
-                      {gallery.length ? (
-                        <MiniCarousel images={gallery} name={p.name} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">{emoji}</div>
-                      )}
-                    </div>
-                    <div className="p-3 sm:p-4 flex flex-col gap-2 sm:gap-3 relative z-10">
-                      <div className="min-w-0 text-center sm:text-left">
-                        <p className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1">{p.name}</p>
-                        {p.description && (
-                          <p className="hidden sm:block text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
-                            {p.description}
-                          </p>
-                        )}
-                        <p className="text-brand-600 dark:text-brand-400 font-bold text-sm mt-1">
-                          {formatPrice(p.price)}
-                        </p>
-                      </div>
-                      <AddToCartButton
-                        product={{ id: p.id, business_id: p.business_id, name: p.name, price: p.price, image_url: gallery[0] }}
-                      />
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
           {/* Reviews */}
           <section>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

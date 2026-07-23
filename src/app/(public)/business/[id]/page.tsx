@@ -154,11 +154,12 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
       </div>
 
       {products.length > 0 && (
-        <section className="mb-6 -mx-4 overflow-hidden">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 px-4 flex items-center gap-2">
+        <section className="mb-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Package className="w-5 h-5 text-brand-600" /> Productos
           </h2>
           <ProductsReel
+            grid
             items={products.map((p) => ({
               id: p.id,
               name: p.name,

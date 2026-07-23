@@ -67,7 +67,11 @@ const MIN_ITEMS_FOR_LOOP = 5;
 // Velocidad del auto-avance en px por frame (~60fps).
 const AUTO_SCROLL_SPEED = 0.6;
 
-export default function ProductsReel({ items }: { items: ReelItem[] }) {
+// items?: Cuando es true (tiendas, real o demo), se muestran todos los
+// productos en una cuadrícula fija, sin auto-scroll ni arrastre, como el
+// listado de productos de un vendedor en Mercado Libre. El carrusel con
+// auto-avance solo se usa en "Productos Destacados" del home.
+export default function ProductsReel({ items, grid = false }: { items: ReelItem[]; grid?: boolean }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const draggingRef = useRef(false);
@@ -76,7 +80,7 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
   const pointerIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (items.length < MIN_ITEMS_FOR_LOOP) return;
+    if (grid || items.length < MIN_ITEMS_FOR_LOOP) return;
     const el = scrollerRef.current;
     if (!el) return;
 
@@ -91,11 +95,14 @@ export default function ProductsReel({ items }: { items: ReelItem[] }) {
     };
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [items.length]);
+  }, [items.length, grid]);
 
-  if (items.length < MIN_ITEMS_FOR_LOOP) {
+  if (grid || items.length < MIN_ITEMS_FOR_LOOP) {
+    // El modo "grid" (tiendas) vive dentro de un contenedor que ya trae su
+    // propio padding; el fallback de pocos items del carrusel del home
+    // necesita su propio px-4 porque su sección es a sangre completa.
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 px-4">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 ${grid ? "" : "px-4"}`}>
         {items.map((item) => (
           <ReelCard key={item.id} item={item} fixedWidth={false} />
         ))}

@@ -18,6 +18,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import ProductGallery from "./ProductGallery";
+import TrackRecentlyViewed from "./TrackRecentlyViewed";
 import AddToCartButton from "@/components/ui/AddToCartButton";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80";
@@ -77,6 +78,17 @@ export default async function ProductPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 pb-24">
+      <TrackRecentlyViewed
+        item={{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: images[0],
+          business_id: product.business_id,
+          business_name: business?.name ?? "Tienda",
+          business_category: business?.category ?? "Otro",
+        }}
+      />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-gray-500 mb-6 flex-wrap">
         <Link href="/" className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">

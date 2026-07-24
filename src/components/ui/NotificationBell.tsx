@@ -13,6 +13,7 @@ export default function NotificationBell({ href }: { href: string }) {
   useEffect(() => {
     if (!isLoaded || !user) return;
     const supabase = createClient();
+    const instanceId = Math.random().toString(36).slice(2);
 
     const load = () => {
       supabase
@@ -24,8 +25,13 @@ export default function NotificationBell({ href }: { href: string }) {
     };
     load();
 
+    // Navbar (mobile) y DesktopSidebar montan esta misma campana a la vez
+    // (una queda oculta por CSS, no por render condicional), así que cada
+    // instancia necesita su propio nombre de canal: Supabase reutiliza el
+    // canal si el nombre coincide y truena al hacer .on() tras el subscribe()
+    // que ya hizo la otra instancia.
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(`notifications-${user.id}-${instanceId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, load)
       .subscribe();
 

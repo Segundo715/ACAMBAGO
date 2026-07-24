@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Product } from "@/types";
-import { Plus, Pencil, Trash2, Package, Upload, X, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Upload, X, AlertCircle, PauseCircle, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { DEMO_PRODUCTS } from "@/lib/demo-data";
@@ -156,6 +156,18 @@ export default function ProductsPage() {
     }
 
     setSaving(false);
+  };
+
+  const handleToggleAvailability = async (p: Product) => {
+    if (IS_DEMO) { toast("Conecta Supabase para pausar productos reales", { icon: "ℹ️" }); return; }
+    const is_available = !p.is_available;
+    const { error } = await supabase.from("products").update({ is_available }).eq("id", p.id);
+    if (error) {
+      toast.error("No se pudo actualizar el producto");
+      return;
+    }
+    setProducts((prev) => prev.map((item) => (item.id === p.id ? { ...item, is_available } : item)));
+    toast.success(is_available ? "Producto activado, ya se ve en tu tienda" : "Producto pausado, no se ve en tu tienda");
   };
 
   const handleDelete = async (id: string) => {
@@ -324,14 +336,18 @@ export default function ProductsPage() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {products.filter((p) => tab === "todos" || p.stock_quantity === 0).map((p) => (
-            <div key={p.id} className="card overflow-hidden group hover:shadow-md transition-all">
+            <div key={p.id} className={`card overflow-hidden group hover:shadow-md transition-all ${p.is_available === false ? "opacity-60" : ""}`}>
               <div className="h-28 sm:h-40 bg-slate-50 dark:bg-white/5 relative flex items-center justify-center overflow-hidden">
                 {p.image_url ? (
                   <Image src={p.image_url} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <Package className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 )}
-                <StockBadge stock={p.stock_quantity} />
+                {p.is_available === false ? (
+                  <span className="absolute top-2 left-2 text-[10px] font-semibold bg-slate-600 text-white px-2 py-0.5 rounded-full">Pausado</span>
+                ) : (
+                  <StockBadge stock={p.stock_quantity} />
+                )}
                 {p.image_urls && p.image_urls.length > 1 && (
                   <span className="absolute bottom-2 right-2 text-[10px] font-semibold bg-black/60 text-white px-2 py-0.5 rounded-full">
                     +{p.image_urls.length - 1} fotos
@@ -347,6 +363,17 @@ export default function ProductsPage() {
 
                 {/* Action buttons — prominentes */}
                 <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4">
+                  <button
+                    onClick={() => handleToggleAvailability(p)}
+                    title={p.is_available === false ? "Activar producto" : "Pausar producto"}
+                    className={`w-9 sm:w-10 flex-shrink-0 flex items-center justify-center py-2 sm:py-2.5 rounded-xl border transition-colors ${
+                      p.is_available === false
+                        ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
+                        : "bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10"
+                    }`}
+                  >
+                    {p.is_available === false ? <PlayCircle className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />}
+                  </button>
                   <button
                     onClick={() => openEdit(p)}
                     className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-colors"

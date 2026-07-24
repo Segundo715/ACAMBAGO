@@ -9,6 +9,7 @@ import { getDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
 import { loadOwnedBusinesses, setCurrentBusinessId } from "@/lib/current-business";
 import { Business } from "@/types";
 import ShareButton from "@/components/ui/ShareButton";
+import AccountModeSwitcher from "@/components/ui/AccountModeSwitcher";
 
 export default function UserInfo() {
   const { user, isLoaded } = useUser();
@@ -120,6 +121,12 @@ export default function UserInfo() {
           )}
         </button>
       </div>
+
+      {role === "business" && (
+        <div className="mt-2">
+          <AccountModeSwitcher compact />
+        </div>
+      )}
 
       {canPreviewStore && (
         <ShareButton

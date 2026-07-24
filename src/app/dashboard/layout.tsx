@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import LogoutButton from "@/components/ui/LogoutButton";
 import UserInfo from "@/components/ui/UserInfo";
+import NotificationBell from "@/components/ui/NotificationBell";
 import DashboardNav from "./DashboardNav";
 import DemoBanner from "@/components/ui/DemoBanner";
 import PendingApprovalGate from "./PendingApprovalGate";
@@ -60,11 +61,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-white/10 fixed inset-y-0 left-0 bg-white dark:bg-[#040a14]/90 dark:backdrop-blur-md z-40">
         {/* Logo + modo badge */}
         <div className="p-5 border-b border-slate-200 dark:border-white/10 space-y-3">
-          <Link href="/" className="flex items-center">
-            <div className="h-9 bg-white rounded-xl px-2 flex items-center shadow-sm">
-              <Image src="/acomdi.png" alt="Acom-Di" width={70} height={28} className="h-7 w-auto object-contain" />
-            </div>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center">
+              <div className="h-9 bg-white rounded-xl px-2 flex items-center shadow-sm">
+                <Image src="/acomdi.png" alt="Acom-Di" width={70} height={28} className="h-7 w-auto object-contain" />
+              </div>
+            </Link>
+            <NotificationBell href="/dashboard/business/notificaciones" />
+          </div>
           <div className="flex items-center gap-2 px-2.5 py-1.5 bg-brand-500/10 dark:bg-brand-500/15 rounded-xl border border-brand-200 dark:border-brand-500/30">
             <Store className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
             <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">Modo Vendedor</span>
@@ -75,13 +79,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <DashboardNav />
 
         <div className="p-3 border-t border-slate-200 dark:border-white/10 space-y-1">
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-all"
-          >
-            <ShoppingBag className="w-4 h-4 flex-shrink-0" />
-            Ir a comprar
-          </Link>
           <LogoutButton />
         </div>
       </aside>
@@ -100,7 +97,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Vendedor
             </span>
           </div>
-          <UserInfo />
+          <div className="flex items-center gap-1">
+            <NotificationBell href="/dashboard/business/notificaciones" />
+            <UserInfo />
+          </div>
         </div>
 
         {/* Mobile bottom nav */}

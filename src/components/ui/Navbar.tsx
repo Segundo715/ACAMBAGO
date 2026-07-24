@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, X, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
 import { createClient } from "@/lib/supabase/client";
@@ -75,9 +76,10 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Mobile: theme + hamburger (el carrito ya vive en la barra inferior) */}
+          {/* Mobile: theme + notificaciones + hamburger (el carrito ya vive en la barra inferior) */}
           <div className="flex items-center gap-1">
             <ThemeToggle />
+            {user && <NotificationBell href={role === "business" ? "/dashboard/business/notificaciones" : "/perfil/notificaciones"} />}
             <button
               className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}

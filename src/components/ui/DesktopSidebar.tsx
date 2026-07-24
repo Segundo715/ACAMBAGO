@@ -3,8 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, LayoutGrid, Map, Ticket, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, ChevronRight, Menu } from "lucide-react";
+import { Home, Tag, LayoutGrid, Map, Ticket, ShoppingCart, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Menu } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import AccountModeSwitcher from "./AccountModeSwitcher";
+import NotificationBell from "./NotificationBell";
 import { useCart } from "@/lib/cart-context";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
@@ -41,12 +43,13 @@ export default function DesktopSidebar({ hidden }: { hidden: boolean }) {
       }`}
     >
       {/* Logo */}
-      <div className="p-5 border-b border-slate-200 dark:border-white/10">
+      <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <div className="h-10 bg-white rounded-xl px-3 flex items-center shadow-sm">
             <Image src="/acomdi.png" alt="Acom-Di" width={80} height={32} className="h-8 w-auto object-contain" priority />
           </div>
         </Link>
+        {user && <NotificationBell href={role === "business" ? "/dashboard/business/notificaciones" : "/perfil/notificaciones"} />}
       </div>
 
       {/* Nav items */}
@@ -106,16 +109,9 @@ export default function DesktopSidebar({ hidden }: { hidden: boolean }) {
                 </div>
               </div>
 
-              {/* Mi Tienda (solo para vendedores) */}
+              {/* Selector Mi cuenta / Mi tienda (solo para vendedores) */}
               {role === "business" ? (
-                <Link
-                  href="/dashboard/business"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-brand-500 hover:bg-brand-600 text-white transition-colors"
-                >
-                  <Store className="w-5 h-5 flex-shrink-0" />
-                  Mi Tienda
-                  <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
-                </Link>
+                <AccountModeSwitcher />
               ) : (
                 <Link
                   href={dashboardHref}

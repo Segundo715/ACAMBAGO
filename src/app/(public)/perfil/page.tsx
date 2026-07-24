@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser, useReverification } from "@clerk/nextjs";
-import { isReverificationCancelledError } from "@clerk/nextjs/errors";
+import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  User, Save, Ticket, Store, ArrowLeft, ShoppingBag,
-  Heart, Star, MapPin, ChevronRight, Package, Camera,
+  User, Ticket, Store, ShoppingBag, Heart, ChevronRight, Package, Settings,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -17,7 +15,7 @@ import { es } from "date-fns/locale";
 import { formatPrice } from "@/lib/utils";
 import { playNotificationSound } from "@/lib/notification-sound";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
-import { Order, OrderStatus, CATEGORY_ICONS } from "@/types";
+import { Order, OrderStatus } from "@/types";
 import {
   getDemoMode,
   DEMO_BUYER,
@@ -30,18 +28,6 @@ interface Redemption {
   id: string;
   redeemed_at: string;
   coupons: { title: string; value: number; discount_type: string; businesses: { name: string } };
-}
-
-interface FavoriteStore {
-  id: string;
-  name: string;
-  category: string;
-  rating: number;
-  emoji: string;
-}
-
-interface FavoriteRow {
-  businesses: { id: string; name: string; category: string; rating_avg: number } | null;
 }
 
 type BuyerOrder = Order & { businesses: { name: string } | null };
@@ -59,34 +45,22 @@ function orderItemsSummary(order: BuyerOrder) {
   return `${items[0].name} y ${items.length - 1} más`;
 }
 
-export default function PerfilPage() {
+export default function PerfilResumenPage() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  const createPhoneNumberWithReverification = useReverification((phoneNumber: string) => user!.createPhoneNumber({ phoneNumber }));
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
-  const [editOpen, setEditOpen] = useState(false);
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [ordersCount, setOrdersCount] = useState(0);
-  const [favoriteStores, setFavoriteStores] = useState<FavoriteStore[]>([]);
-  const [originalPhone, setOriginalPhone] = useState("");
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
-  const [pendingPhoneResource, setPendingPhoneResource] = useState<Awaited<ReturnType<NonNullable<typeof user>["createPhoneNumber"]>> | null>(null);
-  const [otpCode, setOtpCode] = useState("");
-  const [confirmingCode, setConfirmingCode] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
-    // Demo mode: skip Clerk user requirement
     const demoMode = getDemoMode();
     if (demoMode === "buyer") {
       setName(DEMO_BUYER.name);
-      setPhone(DEMO_BUYER.phone);
       setLoading(false);
       return;
     }
@@ -101,23 +75,16 @@ export default function PerfilPage() {
     }
 
     const load = async () => {
-      const { data: profile } = await supabase.from("profiles").select("name, phone, avatar_url").eq("id", user.id).single();
-      if (profile) {
-        setName(profile.name ?? "");
-        setPhone(profile.phone ?? "");
-        setAvatarUrl(profile.avatar_url ?? null);
-        setOriginalPhone(profile.phone ?? "");
-      } else {
-        setName(user.fullName ?? user.firstName ?? "");
-      }
+      const { data: profile } = await supabase.from("profiles").select("name, avatar_url").eq("id", user.id).single();
+      setName(profile?.name ?? user.fullName ?? user.firstName ?? "");
+      setAvatarUrl(profile?.avatar_url ?? null);
 
       const { data: reds } = await supabase
         .from("coupon_redemptions")
         .select("id, redeemed_at, coupons(title, value, discount_type, businesses(name))")
         .eq("user_id", user.id)
         .order("redeemed_at", { ascending: false })
-        .limit(10);
-
+        .limit(3);
       setRedemptions((reds ?? []) as unknown as Redemption[]);
 
       const { data: myOrders, count } = await supabase
@@ -125,34 +92,25 @@ export default function PerfilPage() {
         .select("*, order_items(*), businesses(name)", { count: "exact" })
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(5);
-
+        .limit(3);
       setOrders((myOrders ?? []) as unknown as BuyerOrder[]);
       setOrdersCount(count ?? 0);
 
-      const { data: favRows } = await supabase
+      const { count: favCount } = await supabase
         .from("business_favorites")
-        .select("businesses(id, name, category, rating_avg)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      const stores: FavoriteStore[] = [];
-      for (const row of (favRows ?? []) as unknown as FavoriteRow[]) {
-        const b = row.businesses;
-        if (!b) continue;
-        stores.push({ id: b.id, name: b.name, category: b.category, rating: Number(b.rating_avg) || 0, emoji: CATEGORY_ICONS[b.category] ?? "🏪" });
-      }
-      setFavoriteStores(stores);
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      setFavoritesCount(favCount ?? 0);
 
       setLoading(false);
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, user?.id]);
 
   // Notificación en vivo: si el vendedor cambia el estado de un pedido, avisa sin recargar.
   useEffect(() => {
     if (IS_DEMO || !user) return;
-
     const channel = supabase
       .channel(`buyer-orders-${user.id}`)
       .on(
@@ -166,123 +124,13 @@ export default function PerfilPage() {
         }
       )
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    const demoMode = getDemoMode();
-    if (!file || !user || demoMode || IS_DEMO) return;
-
-    setUploadingAvatar(true);
-    try {
-      const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
-      let uploadBlob: Blob = file;
-      let ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-      let contentType = file.type || "image/jpeg";
-
-      if (isHeic) {
-        const convert = (await import("heic-convert/browser")).default;
-        const buffer = await file.arrayBuffer();
-        const output = await convert({ buffer: new Uint8Array(buffer), format: "JPEG", quality: 0.9 });
-        uploadBlob = new Blob([output as BlobPart], { type: "image/jpeg" });
-        ext = "jpg";
-        contentType = "image/jpeg";
-      }
-
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("profile-images").upload(path, uploadBlob, { upsert: true, contentType });
-      if (uploadErr) throw new Error(uploadErr.message);
-
-      const { data: { publicUrl } } = supabase.storage.from("profile-images").getPublicUrl(path);
-      const { error: dbErr } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client", avatar_url: publicUrl });
-      if (dbErr) throw new Error(dbErr.message);
-
-      setAvatarUrl(publicUrl);
-      toast.success("Foto de perfil actualizada");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "No se pudo subir la foto");
-    }
-    setUploadingAvatar(false);
-  };
-
-  const savePhoneToProfile = async () => {
-    if (!user) return;
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client" });
-    if (!error) {
-      toast.success("Perfil actualizado");
-      setEditOpen(false);
-      setOriginalPhone(phone);
-    } else {
-      toast.error("Error al guardar");
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const demoMode = getDemoMode();
-    if (demoMode || IS_DEMO) { toast.success("Perfil actualizado (modo demo)"); setEditOpen(false); return; }
-    if (!user) return;
-
-    const digits = phone.replace(/\D/g, "");
-    const phoneChanged = digits.length > 0 && digits !== originalPhone.replace(/\D/g, "");
-
-    if (!phoneChanged) {
-      setSaving(true);
-      await savePhoneToProfile();
-      setSaving(false);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const phoneResource = await createPhoneNumberWithReverification(`+52${digits}`);
-      if (!phoneResource) return;
-      await phoneResource.prepareVerification();
-      setPendingPhoneResource(phoneResource);
-      setVerifyingPhone(true);
-      toast.success("Te enviamos un código por SMS a tu teléfono");
-    } catch (err) {
-      if (isReverificationCancelledError(err)) {
-        toast("Cancelaste la verificación", { icon: "ℹ️" });
-      } else {
-        const message = err instanceof Error ? err.message : "No se pudo enviar el código de verificación";
-        toast.error(message);
-      }
-    }
-    setSaving(false);
-  };
-
-  const handleConfirmCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pendingPhoneResource) return;
-    setConfirmingCode(true);
-    try {
-      await pendingPhoneResource.attemptVerification({ code: otpCode });
-      await savePhoneToProfile();
-      setVerifyingPhone(false);
-      setPendingPhoneResource(null);
-      setOtpCode("");
-    } catch {
-      toast.error("Código incorrecto, intenta de nuevo");
-    }
-    setConfirmingCode(false);
-  };
-
-  const cancelPhoneVerification = () => {
-    pendingPhoneResource?.destroy().catch(() => {});
-    setVerifyingPhone(false);
-    setPendingPhoneResource(null);
-    setOtpCode("");
-    setPhone(originalPhone);
-  };
-
   if (loading || (!getDemoMode() && !isLoaded)) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12 animate-pulse space-y-4">
-        <div className="h-32 bg-slate-100 dark:bg-white/5 rounded-2xl" />
+      <div className="animate-pulse space-y-4">
+        <div className="h-24 bg-slate-100 dark:bg-white/5 rounded-2xl" />
         <div className="h-20 bg-slate-100 dark:bg-white/5 rounded-2xl" />
         <div className="h-48 bg-slate-100 dark:bg-white/5 rounded-2xl" />
       </div>
@@ -290,131 +138,52 @@ export default function PerfilPage() {
   }
 
   const demoMode = getDemoMode();
-  const email = demoMode === "buyer" ? DEMO_BUYER.email : (user?.emailAddresses[0]?.emailAddress ?? "");
   const initials = name ? name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() : "?";
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-      <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Inicio
-      </Link>
-
-      {/* Hero */}
-      <div className="card p-6">
-        <div className="flex items-center gap-4">
-          <div className="relative w-16 h-16 flex-shrink-0">
-            <div className="w-16 h-16 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-md overflow-hidden">
-              {avatarUrl ? (
-                <Image src={avatarUrl} alt={name || "Mi foto"} fill className="object-cover" />
-              ) : (
-                initials
-              )}
-            </div>
-            {!demoMode && !IS_DEMO && (
-              <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-[#0a1628] border border-slate-200 dark:border-white/20 rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-sm">
-                {uploadingAvatar ? (
-                  <span className="w-3 h-3 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Camera className="w-3 h-3 text-slate-600 dark:text-slate-300" />
-                )}
-                <input type="file" accept="image/*,.heic,.heif" onChange={handleAvatarChange} disabled={uploadingAvatar} className="hidden" />
-              </label>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{name || "Mi cuenta"}</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{email}</p>
-            <span className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-100 dark:border-brand-500/20">
-              <User className="w-3 h-3" /> Comprador
-            </span>
-          </div>
-          <button
-            onClick={() => setEditOpen(!editOpen)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-          >
-            {editOpen ? "Cancelar" : "Editar"}
-          </button>
+    <div className="space-y-5">
+      {/* Greeting */}
+      <div className="card p-6 flex items-center gap-4">
+        <div className="w-14 h-14 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-md overflow-hidden flex-shrink-0 relative">
+          {avatarUrl ? <Image src={avatarUrl} alt={name || "Mi foto"} fill className="object-cover" /> : initials}
         </div>
-
-        {/* Edit form (inline collapse) */}
-        {editOpen && verifyingPhone && (
-          <form onSubmit={handleConfirmCode} className="mt-5 pt-5 border-t border-slate-100 dark:border-white/10 space-y-3">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Te enviamos un código por SMS al <span className="font-semibold">{phone}</span>. Ingrésalo para confirmar tu número.
-            </p>
-            <div>
-              <label className="label">Código de verificación</label>
-              <input
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                className="input tracking-widest text-center"
-                placeholder="123456"
-                inputMode="numeric"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" disabled={confirmingCode || !otpCode} className="btn-primary flex items-center gap-2 flex-1">
-                <Save className="w-4 h-4" />
-                {confirmingCode ? "Verificando..." : "Confirmar código"}
-              </button>
-              <button type="button" onClick={cancelPhoneVerification} className="px-4 rounded-xl border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        )}
-        {editOpen && !verifyingPhone && (
-          <form onSubmit={handleSave} className="mt-5 pt-5 border-t border-slate-100 dark:border-white/10 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="label">Nombre</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Tu nombre" />
-              </div>
-              <div>
-                <label className="label">Teléfono</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input" placeholder="4181234567" />
-                {!IS_DEMO && !getDemoMode() && (
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Si lo cambias, te vamos a mandar un código por SMS para confirmarlo.</p>
-                )}
-              </div>
-            </div>
-            <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 w-full sm:w-auto">
-              <Save className="w-4 h-4" />
-              {saving ? "Guardando..." : "Guardar cambios"}
-            </button>
-          </form>
-        )}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">Hola, {name || "de nuevo"}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Este es el resumen de tu cuenta</p>
+        </div>
+        <Link href="/perfil/configuracion" className="flex-shrink-0 p-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors" title="Configuración">
+          <Settings className="w-4 h-4" />
+        </Link>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: ShoppingBag, label: "Pedidos",   value: demoMode ? DEMO_MY_ORDERS.length : (IS_DEMO ? DEMO_MY_ORDERS.length : ordersCount), color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-blue-500/10" },
-          { icon: Heart,       label: "Favoritos", value: demoMode ? DEMO_FAVORITES.length : (IS_DEMO ? DEMO_FAVORITES.length : favoriteStores.length), color: "text-red-500 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/10" },
-          { icon: Ticket,      label: "Cupones",   value: demoMode ? DEMO_BUYER_COUPONS.length : (IS_DEMO ? 2 : redemptions.length), color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10" },
-        ].map(({ icon: Icon, label, value, color, bg }) => (
-          <div key={label} className="card p-4 text-center">
+          { icon: ShoppingBag, label: "Pedidos",   value: demoMode ? DEMO_MY_ORDERS.length : (IS_DEMO ? DEMO_MY_ORDERS.length : ordersCount), color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-blue-500/10", href: "/perfil/pedidos" },
+          { icon: Heart,       label: "Favoritos", value: demoMode ? DEMO_FAVORITES.length : (IS_DEMO ? DEMO_FAVORITES.length : favoritesCount), color: "text-red-500 dark:text-red-400",     bg: "bg-red-50 dark:bg-red-500/10", href: "/perfil/favoritos" },
+          { icon: Ticket,      label: "Cupones",   value: demoMode ? DEMO_BUYER_COUPONS.length : (IS_DEMO ? 2 : redemptions.length), color: "text-orange-500 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-500/10", href: "/coupons" },
+        ].map(({ icon: Icon, label, value, color, bg, href }) => (
+          <Link key={label} href={href} className="card p-4 text-center hover:shadow-md transition-shadow">
             <div className={`w-8 h-8 ${bg} rounded-xl flex items-center justify-center mx-auto mb-2`}>
               <Icon className={`w-4 h-4 ${color}`} />
             </div>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
-      {/* My orders */}
+      {/* My orders (preview) */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Package className="w-4 h-4 text-brand-500" /> Mis pedidos
           </h2>
-          {(demoMode || IS_DEMO) && <span className="text-xs text-slate-400">Demo</span>}
+          <Link href="/perfil/pedidos" className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline">Ver todos</Link>
         </div>
         {demoMode || IS_DEMO ? (
           <div className="divide-y divide-slate-100 dark:divide-white/10">
-            {DEMO_MY_ORDERS.map((o) => (
+            {DEMO_MY_ORDERS.slice(0, 3).map((o) => (
               <Link key={o.id} href={`/checkout/tracking?order=${o.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                 <OrderStatusIcon status={o.status as OrderStatus} className="w-8 h-8 rounded-xl" />
                 <div className="flex-1 min-w-0">
@@ -456,48 +225,9 @@ export default function PerfilPage() {
         )}
       </div>
 
-      {/* Favorite stores */}
+      {/* Redeemed coupons (preview) */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" /> Tiendas favoritas
-          </h2>
-          {(demoMode || IS_DEMO) && <span className="text-xs text-slate-400">Demo</span>}
-        </div>
-        {(demoMode || IS_DEMO ? DEMO_FAVORITES : favoriteStores).length === 0 ? (
-          <div className="px-5 py-10 text-center">
-            <Heart className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Todavía no tienes tiendas favoritas.</p>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Toca el corazón en una tienda para agregarla aquí.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-white/10">
-            {(demoMode || IS_DEMO ? DEMO_FAVORITES : favoriteStores).map((s) => (
-              <Link key={s.id} href={`/business/${s.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                <div className="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                  {s.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">{s.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {s.category}
-                    </span>
-                    <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-0.5">
-                      <Star className="w-3 h-3 fill-current" /> {s.rating}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Redeemed coupons */}
-      <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10">
           <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Ticket className="w-4 h-4 text-orange-500" /> Cupones canjeados
           </h2>
@@ -555,10 +285,9 @@ export default function PerfilPage() {
       {/* Account links */}
       <div className="card divide-y divide-slate-100 dark:divide-white/10 overflow-hidden">
         {[
-          { icon: ShoppingBag, label: "Ver todos los pedidos", href: "/perfil/pedidos" },
-          { icon: Ticket,      label: "Explorar cupones",      href: "/coupons" },
-          { icon: MapPin,      label: "Ver mapa de tiendas",   href: "/map" },
-          { icon: Store,       label: "Todas las tiendas",     href: "/" },
+          { icon: User,    label: "Editar mi perfil",     href: "/perfil/configuracion" },
+          { icon: Ticket,  label: "Explorar cupones",      href: "/coupons" },
+          { icon: Store,   label: "Todas las tiendas",     href: "/" },
         ].map(({ icon: Icon, label, href }) => (
           <Link key={label} href={href} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
             <Icon className="w-4 h-4 text-slate-400 flex-shrink-0" />

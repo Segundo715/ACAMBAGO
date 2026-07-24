@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ChevronRight, Package, Clock, Heart, Ticket, LayoutGrid,
   TrendingUp, Coins, MapPin, Store, Settings, LogOut, User,
+  MessageSquare, Bell,
 } from "lucide-react";
 import { useAuthUser } from "@/lib/hooks/use-auth-user";
 import { getDemoMode, stopDemoMode } from "@/lib/demo-mode";
@@ -80,8 +81,11 @@ export default function MasPage() {
         title="Mi actividad"
         rows={[
           { icon: Package, label: "Mis pedidos", href: "/perfil/pedidos" },
+          { icon: MapPin, label: "Mis direcciones", href: "/perfil/direcciones" },
           { icon: Clock, label: "Vistos recientemente", href: "/vistos-recientemente" },
-          { icon: Heart, label: "Tiendas favoritas", href: "/perfil" },
+          { icon: Heart, label: "Tiendas favoritas", href: "/perfil/favoritos" },
+          { icon: MessageSquare, label: "Mis preguntas", href: "/perfil/preguntas" },
+          { icon: Bell, label: "Notificaciones", href: "/perfil/notificaciones" },
           { icon: Ticket, label: "Cupones canjeados", href: "/perfil" },
         ]}
       />
@@ -109,7 +113,7 @@ export default function MasPage() {
       <div className="mb-2">
         <p className="px-4 pt-5 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-gray-500">Cuenta</p>
         <div className="bg-white dark:bg-[#0a1628] rounded-2xl mx-4 border border-slate-100 dark:border-white/10 overflow-hidden">
-          <Link href="/perfil" className="flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+          <Link href="/perfil/configuracion" className="flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
             <Settings className="w-5 h-5 text-slate-500 dark:text-gray-400 flex-shrink-0" />
             <span className="flex-1 text-sm font-medium text-slate-800 dark:text-gray-200">Configuración de mi perfil</span>
             <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 flex-shrink-0" />

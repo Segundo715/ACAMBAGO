@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, Package, Store } from "lucide-react";
+import { Package, Store } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
@@ -50,11 +50,7 @@ export default function PedidosPage() {
   }, [isLoaded, user?.id]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-      <Link href="/perfil" className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Mi cuenta
-      </Link>
-
+    <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Package className="w-5 h-5 text-brand-500" /> Mis pedidos

@@ -10,6 +10,14 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+/* Sin esto, los controles nativos (el popup de un <select>, el date
+   picker, la barra de scroll) los pinta el sistema operativo en claro
+   aunque la pagina este en modo oscuro. */
+html.dark {
+  color-scheme: dark;
 }
 
 /* ── Modo claro (por defecto) ── */

@@ -11,6 +11,21 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface Address {
+  id: string;
+  user_id: string;
+  label: string;
+  street: string;
+  notes?: string;
+  colonia?: string;
+  zip?: string;
+  city: string;
+  phone: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Business {
   id: string;
   owner_id: string;
@@ -47,6 +62,7 @@ export interface Product {
   image_url?: string;
   image_urls?: string[];
   is_available: boolean;
+  stock_quantity?: number;
   created_at: string;
   updated_at: string;
 }
@@ -73,6 +89,30 @@ export interface CouponRedemption {
   user_id?: string;
   business_id: string;
   redeemed_at: string;
+}
+
+export interface ProductQuestion {
+  id: string;
+  product_id: string;
+  business_id: string;
+  user_id: string;
+  question: string;
+  answer?: string;
+  answered_at?: string;
+  created_at: string;
+}
+
+export type NotificationType = "order_status" | "new_order" | "question_answered" | "new_question";
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body?: string;
+  link?: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 export interface Review {

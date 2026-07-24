@@ -9,6 +9,7 @@ import { Order, OrderStatus, PaymentMethod } from "@/types";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { loadOwnedBusinesses } from "@/lib/current-business";
 import { playNotificationSound } from "@/lib/notification-sound";
+import { createNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -16,6 +17,7 @@ const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABA
 
 interface OrderRow {
   id: string;
+  user_id: string;
   customer: string;
   phone: string;
   items: string[];
@@ -36,13 +38,13 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
 };
 
 const DEMO_ORDERS: OrderRow[] = [
-  { id: "ORD-001", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro", payment_method: "cash" },
-  { id: "ORD-002", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas", payment_method: "transfer" },
-  { id: "ORD-003", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88", payment_method: "cod" },
-  { id: "ORD-004", customer: "José López", phone: "4151234570", items: ["Pintura Vinílica 4L Blanco"], total: 320, status: "cancelado", date: "25 Jun 2026 · 09:45", address: "Calle Juárez 3", payment_method: "cash" },
-  { id: "ORD-005", customer: "Luisa Torres", phone: "4151234571", items: ["Taladro Percutor 750W", "Kit Fumigador Pro"], total: 1169, status: "pendiente", date: "25 Jun 2026 · 08:20", address: "Av. 5 de Febrero 201", payment_method: "transfer" },
-  { id: "ORD-006", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7", payment_method: "cash" },
-  { id: "ORD-007", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55", payment_method: "card" },
+  { id: "ORD-001", user_id: "demo", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro", payment_method: "cash" },
+  { id: "ORD-002", user_id: "demo", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas", payment_method: "transfer" },
+  { id: "ORD-003", user_id: "demo", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88", payment_method: "cod" },
+  { id: "ORD-004", user_id: "demo", customer: "José López", phone: "4151234570", items: ["Pintura Vinílica 4L Blanco"], total: 320, status: "cancelado", date: "25 Jun 2026 · 09:45", address: "Calle Juárez 3", payment_method: "cash" },
+  { id: "ORD-005", user_id: "demo", customer: "Luisa Torres", phone: "4151234571", items: ["Taladro Percutor 750W", "Kit Fumigador Pro"], total: 1169, status: "pendiente", date: "25 Jun 2026 · 08:20", address: "Av. 5 de Febrero 201", payment_method: "transfer" },
+  { id: "ORD-006", user_id: "demo", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7", payment_method: "cash" },
+  { id: "ORD-007", user_id: "demo", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55", payment_method: "card" },
 ];
 
 const TABS = [
@@ -58,6 +60,7 @@ type Tab = typeof TABS[number]["key"];
 function orderToRow(o: Order): OrderRow {
   return {
     id: o.id,
+    user_id: o.user_id,
     customer: o.customer_name,
     phone: (o.customer_phone ?? o.address?.phone ?? "").replace(/\D/g, ""),
     items: (o.order_items ?? []).map((it) => `${it.name} x${it.quantity}`),
@@ -127,12 +130,28 @@ export default function OrdersPage() {
     return () => { supabase.removeChannel(channel); };
   }, [loaded]);
 
-  const updateStatus = async (id: string, status: OrderStatus) => {
+  const STATUS_LABELS: Record<OrderStatus, string> = {
+    pendiente: "pendiente",
+    en_camino: "en camino",
+    entregado: "entregado",
+    cancelado: "cancelado",
+  };
+
+  const updateStatus = async (order: OrderRow, status: OrderStatus) => {
     if (IS_DEMO) { toast("Conecta Supabase para actualizar pedidos reales", { icon: "ℹ️" }); return; }
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    const { error } = await supabase.from("orders").update({ status }).eq("id", order.id);
     if (error) { toast.error("Error al actualizar el pedido"); return; }
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status } : o)));
     toast.success("Pedido actualizado");
+    if (order.user_id) {
+      await createNotification(supabase, {
+        user_id: order.user_id,
+        type: "order_status",
+        title: `Tu pedido cambió a "${STATUS_LABELS[status]}"`,
+        body: order.items[0] ? `${order.items[0]}${order.items.length > 1 ? ` y ${order.items.length - 1} más` : ""}` : undefined,
+        link: `/checkout/tracking?order=${order.id}`,
+      });
+    }
   };
 
   const filtered = orders.filter((o) => {
@@ -287,7 +306,7 @@ export default function OrdersPage() {
                       )}
                       {order.status === "pendiente" && (
                         <button
-                          onClick={() => updateStatus(order.id, "en_camino")}
+                          onClick={() => updateStatus(order, "en_camino")}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 rounded-lg text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
                         >
                           <Truck className="w-3.5 h-3.5" /> Marcar como enviado
@@ -295,7 +314,7 @@ export default function OrdersPage() {
                       )}
                       {order.status === "en_camino" && (
                         <button
-                          onClick={() => updateStatus(order.id, "entregado")}
+                          onClick={() => updateStatus(order, "entregado")}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg text-xs font-medium hover:bg-green-100 dark:hover:bg-green-500/20 transition-colors"
                         >
                           <Check className="w-3.5 h-3.5" /> Marcar como entregado

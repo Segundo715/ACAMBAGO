@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Ticket, Settings, ScanLine, Star, ShoppingBag, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Package, Ticket, Settings, ScanLine, Star, ShoppingBag, BarChart2, MessageSquare, Bell } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard/business",              label: "Resumen",       icon: LayoutDashboard },
-  { href: "/dashboard/business/products",     label: "Productos",     icon: Package },
-  { href: "/dashboard/business/orders",       label: "Pedidos",       icon: ShoppingBag },
-  { href: "/dashboard/business/coupons",      label: "Cupones",       icon: Ticket },
-  { href: "/dashboard/business/coupons/scan", label: "Escáner QR",    icon: ScanLine },
-  { href: "/dashboard/business/reviews",      label: "Reseñas",       icon: Star },
-  { href: "/dashboard/business/analytics",    label: "Estadísticas",  icon: BarChart2 },
-  { href: "/dashboard/business/settings",     label: "Configuración", icon: Settings },
+  { href: "/dashboard/business",                label: "Resumen",         icon: LayoutDashboard },
+  { href: "/dashboard/business/products",       label: "Productos",       icon: Package },
+  { href: "/dashboard/business/orders",         label: "Pedidos",         icon: ShoppingBag },
+  { href: "/dashboard/business/coupons",        label: "Cupones",         icon: Ticket },
+  { href: "/dashboard/business/coupons/scan",   label: "Escáner QR",      icon: ScanLine },
+  { href: "/dashboard/business/preguntas",      label: "Preguntas",       icon: MessageSquare },
+  { href: "/dashboard/business/notificaciones", label: "Notificaciones",  icon: Bell },
+  { href: "/dashboard/business/reviews",        label: "Reseñas",         icon: Star },
+  { href: "/dashboard/business/analytics",      label: "Estadísticas",    icon: BarChart2 },
+  { href: "/dashboard/business/settings",       label: "Configuración",   icon: Settings },
 ];
 
 export default function DashboardNav() {

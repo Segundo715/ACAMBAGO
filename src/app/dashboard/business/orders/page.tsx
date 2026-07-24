@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Order, OrderStatus, PaymentMethod } from "@/types";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { loadOwnedBusinesses } from "@/lib/current-business";
-import { playNotificationSound } from "@/lib/notification-sound";
 import { createNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
 
@@ -107,13 +106,16 @@ export default function OrdersPage() {
     load();
   }, [isLoaded, user?.id]);
 
-  // Notificación en vivo: cuando entra un pedido nuevo, suena y aparece arriba de la lista.
+  // Mantiene la lista al dia mientras esta viendo esta pagina. El sonido y el
+  // toast de "pedido nuevo" ya suenan en todo el panel via OrderAlertListener
+  // (dashboard/layout.tsx), asi que aqui solo se actualiza la lista.
   useEffect(() => {
     if (IS_DEMO || !businessIdRef.current) return;
     const bizId = businessIdRef.current;
+    const instanceId = Math.random().toString(36).slice(2);
 
     const channel = supabase
-      .channel(`orders-${bizId}`)
+      .channel(`orders-list-${bizId}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders", filter: `business_id=eq.${bizId}` },
@@ -121,8 +123,6 @@ export default function OrdersPage() {
           const { data: items } = await supabase.from("order_items").select("*").eq("order_id", payload.new.id);
           const fullOrder = { ...(payload.new as Order), order_items: items ?? [] };
           setOrders((prev) => [orderToRow(fullOrder), ...prev]);
-          playNotificationSound();
-          toast.success(`Pedido nuevo de ${fullOrder.customer_name} · ${formatPrice(fullOrder.total)}`, { duration: 6000, icon: "🔔" });
         }
       )
       .subscribe();

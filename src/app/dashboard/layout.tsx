@@ -9,6 +9,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import DashboardNav from "./DashboardNav";
 import DemoBanner from "@/components/ui/DemoBanner";
 import PendingApprovalGate from "./PendingApprovalGate";
+import OrderAlertListener from "@/components/ui/OrderAlertListener";
 import { Store, ShoppingBag, LayoutDashboard, Package, Ticket, Settings } from "lucide-react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -23,6 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isDemoSeller = !userId && cookieStore.get("demo_mode")?.value === "seller";
 
   let pendingApproval = false;
+  let businessId: string | null = null;
 
   if (!isDemoSeller && !IS_DEMO) {
     if (!userId) redirect("/login");
@@ -53,10 +55,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       const activeBusinessId = cookieStore.get("current_business_id")?.value;
       const activeBusiness = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
       pendingApproval = !activeBusiness.is_approved;
+      businessId = activeBusiness.id;
     }
   }
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-[#030810]">
+      {businessId && <OrderAlertListener businessId={businessId} />}
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-white/10 fixed inset-y-0 left-0 bg-white dark:bg-[#040a14]/90 dark:backdrop-blur-md z-40">
         {/* Logo + modo badge */}

@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Save, Upload, LocateFixed, Store } from "lucide-reac
 import { createClient } from "@/lib/supabase/client";
 import { BUSINESS_CATEGORIES } from "@/types";
 import { setCurrentBusinessId } from "@/lib/current-business";
+import CategorySelect from "@/components/ui/CategorySelect";
 import toast from "react-hot-toast";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -126,9 +127,7 @@ export default function CrearTiendaPage() {
 
           <div>
             <label className="label">Categoría *</label>
-            <select required value={category} onChange={(e) => setCategory(e.target.value)} className="input">
-              {BUSINESS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <CategorySelect value={category} onChange={setCategory} options={BUSINESS_CATEGORIES} />
           </div>
 
           <div>

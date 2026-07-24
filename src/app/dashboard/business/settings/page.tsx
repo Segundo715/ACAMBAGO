@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2, Plus } from "lucide-react";
 import { loadOwnedBusinesses } from "@/lib/current-business";
+import CategorySelect from "@/components/ui/CategorySelect";
 import toast from "react-hot-toast";
 
 function SettingsContent() {
@@ -187,9 +188,11 @@ function SettingsContent() {
 
           <div>
             <label className="label">Categoría *</label>
-            <select required value={business.category ?? ""} onChange={(e) => update("category", e.target.value)} className="input">
-              {BUSINESS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <CategorySelect
+              value={business.category ?? BUSINESS_CATEGORIES[0]}
+              onChange={(c) => update("category", c)}
+              options={BUSINESS_CATEGORIES}
+            />
           </div>
 
           <div>

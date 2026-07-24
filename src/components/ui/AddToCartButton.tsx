@@ -13,9 +13,10 @@ interface Props {
     image_url?: string;
   };
   size?: "sm" | "md";
+  disabled?: boolean;
 }
 
-export default function AddToCartButton({ product, size = "md" }: Props) {
+export default function AddToCartButton({ product, size = "md", disabled = false }: Props) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
 
@@ -29,12 +30,13 @@ export default function AddToCartButton({ product, size = "md" }: Props) {
     return (
       <button
         onClick={handleAdd}
-        className={`p-2 rounded-xl transition-all duration-200 ${
+        disabled={disabled}
+        className={`p-2 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
           added
             ? "bg-green-500 text-white"
             : "bg-brand-600 hover:bg-brand-700 text-white"
         }`}
-        title="Agregar al carrito"
+        title={disabled ? "Agotado" : "Agregar al carrito"}
       >
         {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
       </button>
@@ -44,9 +46,12 @@ export default function AddToCartButton({ product, size = "md" }: Props) {
   return (
     <button
       onClick={handleAdd}
-      className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
+      disabled={disabled}
+      className={`w-full flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
         added
           ? "bg-green-500 text-white"
+          : disabled
+          ? "bg-slate-400 dark:bg-white/10 text-white"
           : "bg-brand-600 hover:bg-brand-700 text-white"
       }`}
     >
@@ -55,6 +60,8 @@ export default function AddToCartButton({ product, size = "md" }: Props) {
           <Check className="w-4 h-4 flex-shrink-0" />
           Agregado
         </>
+      ) : disabled ? (
+        "Agotado"
       ) : (
         <>
           <ShoppingCart className="w-4 h-4 flex-shrink-0" />

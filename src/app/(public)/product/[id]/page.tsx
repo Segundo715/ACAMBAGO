@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import ProductGallery from "./ProductGallery";
 import TrackRecentlyViewed from "./TrackRecentlyViewed";
+import ProductQA from "./ProductQA";
 import AddToCartButton from "@/components/ui/AddToCartButton";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80";
@@ -36,6 +37,7 @@ export default async function ProductPage({
   let related = isDemoProduct
     ? DEMO_ALL_PRODUCTS.filter((p) => p.business_id === product!.business_id && p.id !== id).slice(0, 6)
     : [];
+  let questions: import("@/types").ProductQuestion[] = [];
 
   if (!isDemoProduct) {
     try {
@@ -46,12 +48,14 @@ export default async function ProductPage({
         const { data } = await supabase.from("products").select("*").eq("id", id).single();
         if (data) {
           product = data;
-          const [{ data: bizData }, { data: relatedData }] = await Promise.all([
+          const [{ data: bizData }, { data: relatedData }, { data: questionsData }] = await Promise.all([
             supabase.from("businesses").select("*").eq("id", data.business_id).single(),
             supabase.from("products").select("*").eq("business_id", data.business_id).eq("is_available", true).neq("id", id).limit(6),
+            supabase.from("product_questions").select("*").eq("product_id", id).order("created_at", { ascending: false }),
           ]);
           business = bizData ?? null;
           related = relatedData ?? [];
+          questions = questionsData ?? [];
         }
       }
     } catch {}
@@ -142,6 +146,16 @@ export default async function ProductPage({
                 Últimas {extra.stock} unidades
               </span>
             )}
+            {!extra && product.stock_quantity != null && product.stock_quantity === 0 && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400 border border-red-200 dark:border-red-500/30">
+                Agotado
+              </span>
+            )}
+            {!extra && product.stock_quantity != null && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
+                Últimas {product.stock_quantity} unidades
+              </span>
+            )}
           </div>
 
           {/* Nombre */}
@@ -211,11 +225,17 @@ export default async function ProductPage({
               <span className="font-semibold text-slate-700 dark:text-gray-300">{extra.stock}</span> disponibles
             </p>
           )}
+          {!extra && product.stock_quantity != null && (
+            <p className="text-sm text-slate-500 dark:text-gray-400">
+              <span className="font-semibold text-slate-700 dark:text-gray-300">{product.stock_quantity}</span> disponibles
+            </p>
+          )}
 
           {/* Botones */}
           <div className="space-y-3 pt-1">
             <AddToCartButton
               product={{ id: product.id, business_id: product.business_id, name: product.name, price: product.price, image_url: images[0] }}
+              disabled={!extra && product.stock_quantity === 0}
             />
             {whatsappUrl && (
               <a
@@ -273,6 +293,17 @@ export default async function ProductPage({
                 {product.description}
               </p>
             </div>
+          )}
+
+          {/* Preguntas y respuestas (solo productos reales) */}
+          {!isDemoProduct && business && (
+            <ProductQA
+              productId={product.id}
+              productName={product.name}
+              businessId={business.id}
+              businessOwnerId={business.owner_id}
+              initialQuestions={questions}
+            />
           )}
         </div>
 

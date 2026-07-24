@@ -21,6 +21,17 @@ interface ImageSlot {
   preview: string;
 }
 
+function StockBadge({ stock }: { stock?: number }) {
+  if (stock == null) return null;
+  if (stock === 0) {
+    return <span className="absolute top-2 left-2 text-[10px] font-semibold bg-red-600 text-white px-2 py-0.5 rounded-full">Agotado</span>;
+  }
+  if (stock <= 5) {
+    return <span className="absolute top-2 left-2 text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full">Últimas {stock}</span>;
+  }
+  return <span className="absolute top-2 left-2 text-[10px] font-semibold bg-emerald-600 text-white px-2 py-0.5 rounded-full">{stock} en stock</span>;
+}
+
 export default function ProductsPage() {
   const { user, isLoaded } = useUser();
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,9 +41,11 @@ export default function ProductsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("");
   const [saving, setSaving] = useState(false);
   const [images, setImages] = useState<ImageSlot[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState<"todos" | "agotados">("todos");
 
   const supabase = createClient();
 
@@ -60,7 +73,7 @@ export default function ProductsPage() {
 
   const openNew = () => {
     if (IS_DEMO) { toast("Conecta Supabase para agregar productos reales", { icon: "ℹ️" }); return; }
-    setEditing(null); setName(""); setDescription(""); setPrice("");
+    setEditing(null); setName(""); setDescription(""); setPrice(""); setStock("");
     setImages([]); setShowForm(true);
   };
 
@@ -68,6 +81,7 @@ export default function ProductsPage() {
     if (IS_DEMO) { toast("Conecta Supabase para editar productos", { icon: "ℹ️" }); return; }
     setEditing(p); setName(p.name); setDescription(p.description ?? "");
     setPrice(String(p.price));
+    setStock(p.stock_quantity != null ? String(p.stock_quantity) : "");
     const existing = p.image_urls?.length ? p.image_urls : p.image_url ? [p.image_url] : [];
     setImages(existing.map((url) => ({ url, preview: url })));
     setShowForm(true);
@@ -119,18 +133,19 @@ export default function ProductsPage() {
 
     const image_url = finalUrls[0];
     const image_urls = finalUrls;
+    const stock_quantity = stock === "" ? null : parseInt(stock, 10);
 
     if (editing) {
-      const { error } = await supabase.from("products").update({ name, description, price: parseFloat(price), image_url, image_urls }).eq("id", editing.id);
+      const { error } = await supabase.from("products").update({ name, description, price: parseFloat(price), image_url, image_urls, stock_quantity }).eq("id", editing.id);
       if (error) {
         toast.error(`Error al actualizar: ${error.message}`);
       } else {
-        setProducts((prev) => prev.map((p) => p.id === editing.id ? { ...p, name, description, price: parseFloat(price), image_url, image_urls } : p));
+        setProducts((prev) => prev.map((p) => p.id === editing.id ? { ...p, name, description, price: parseFloat(price), image_url, image_urls, stock_quantity: stock_quantity ?? undefined } : p));
         toast.success("Producto actualizado");
         setShowForm(false);
       }
     } else {
-      const { data, error } = await supabase.from("products").insert({ business_id: businessId, name, description, price: parseFloat(price), image_url, image_urls }).select().single();
+      const { data, error } = await supabase.from("products").insert({ business_id: businessId, name, description, price: parseFloat(price), image_url, image_urls, stock_quantity }).select().single();
       if (error) {
         toast.error(`Error al guardar: ${error.message}`);
       } else if (data) {
@@ -166,6 +181,28 @@ export default function ProductsPage() {
           <Plus className="w-4 h-4" /> Agregar producto
         </button>
       </div>
+
+      {/* Tabs */}
+      {products.some((p) => p.stock_quantity === 0) && (
+        <div className="flex gap-2 mb-4">
+          {[
+            { id: "todos" as const, label: "Todos" },
+            { id: "agotados" as const, label: "Agotados" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                tab === t.id
+                  ? "bg-slate-900 text-white dark:bg-white dark:text-gray-900"
+                  : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Demo banner */}
       {IS_DEMO && (
@@ -243,6 +280,11 @@ export default function ProductsPage() {
                 <label className="label">Precio (MXN) *</label>
                 <input required type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="input" placeholder="0.00" />
               </div>
+              <div>
+                <label className="label">Cantidad en inventario</label>
+                <input type="number" min="0" step="1" value={stock} onChange={(e) => setStock(e.target.value)} className="input" placeholder="Sin control de inventario" />
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Déjalo vacío si no quieres llevar el conteo; se descuenta solo con cada venta.</p>
+              </div>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1">Cancelar</button>
@@ -281,7 +323,7 @@ export default function ProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {products.map((p) => (
+          {products.filter((p) => tab === "todos" || p.stock_quantity === 0).map((p) => (
             <div key={p.id} className="card overflow-hidden group hover:shadow-md transition-all">
               <div className="h-28 sm:h-40 bg-slate-50 dark:bg-white/5 relative flex items-center justify-center overflow-hidden">
                 {p.image_url ? (
@@ -289,6 +331,7 @@ export default function ProductsPage() {
                 ) : (
                   <Package className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                 )}
+                <StockBadge stock={p.stock_quantity} />
                 {p.image_urls && p.image_urls.length > 1 && (
                   <span className="absolute bottom-2 right-2 text-[10px] font-semibold bg-black/60 text-white px-2 py-0.5 rounded-full">
                     +{p.image_urls.length - 1} fotos

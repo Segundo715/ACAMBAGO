@@ -6,13 +6,14 @@ import { useUser } from "@clerk/nextjs";
 import {
   ArrowLeft, ChevronRight, MapPin, Clock, Package, CreditCard,
   Banknote, Truck, Store, CheckCircle2, Plus, Minus, Trash2,
-  MessageSquare, Star, Phone, Copy, AlertCircle, Wallet,
+  MessageSquare, Star, Phone, Copy, AlertCircle, Wallet, Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import type { DeliveryMethod, PaymentMethod } from "@/types";
+import { createNotification } from "@/lib/notifications";
+import type { DeliveryMethod, PaymentMethod, Address } from "@/types";
 import {
   DEMO_CHECKOUT_BUSINESS,
   DEMO_MEETING_POINTS,
@@ -48,6 +49,7 @@ interface CardData {
 
 interface PickupBusiness {
   id: string;
+  owner_id: string;
   name: string;
   address: string;
   latitude: number | null;
@@ -279,10 +281,67 @@ function Step2({
   onNext: () => void;
   pickupBusinesses: PickupBusiness[];
 }) {
+  const { user } = useUser();
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedId, setSelectedId] = useState<string | "new">("new");
+  const [saveForNext, setSaveForNext] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  useEffect(() => {
+    if (IS_DEMO || !user || method !== "home") return;
+    const supabase = createClient();
+    supabase
+      .from("addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const rows = (data ?? []) as Address[];
+        setSavedAddresses(rows);
+        const preferred = rows.find((a) => a.is_default) ?? rows[0];
+        if (preferred) {
+          setSelectedId(preferred.id);
+          setAddress({ street: preferred.street, references: preferred.notes ?? "", zip: preferred.zip ?? "", colonia: preferred.colonia ?? "", city: preferred.city, phone: preferred.phone });
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, method]);
+
+  const pickSaved = (addr: Address) => {
+    setSelectedId(addr.id);
+    setAddress({ street: addr.street, references: addr.notes ?? "", zip: addr.zip ?? "", colonia: addr.colonia ?? "", city: addr.city, phone: addr.phone });
+  };
+
+  const pickNew = () => {
+    setSelectedId("new");
+    setAddress({ street: "", references: "", zip: "", colonia: "", city: "Acámbaro, Gto.", phone: "" });
+  };
+
   const canContinue =
     method === "pickup" ||
     (method === "meeting" && meetingPoint !== "") ||
     (method === "home" && address.street !== "" && address.phone !== "");
+
+  const handleContinue = async () => {
+    if (method === "home" && selectedId === "new" && saveForNext && user && !IS_DEMO) {
+      setSavingAddress(true);
+      const supabase = createClient();
+      await supabase.from("addresses").insert({
+        user_id: user.id,
+        label: "Casa",
+        street: address.street,
+        notes: address.references || null,
+        colonia: address.colonia || null,
+        zip: address.zip || null,
+        city: address.city,
+        phone: address.phone,
+        is_default: savedAddresses.length === 0,
+      });
+      setSavingAddress(false);
+    }
+    onNext();
+  };
 
   return (
     <div className="space-y-4">
@@ -402,42 +461,88 @@ function Step2({
 
       {/* Home delivery */}
       {method === "home" && (
-        <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
+        <div className="space-y-3">
           <div className="flex items-center gap-2 p-2.5 bg-brand-50 dark:bg-brand-500/10 rounded-xl border border-brand-200 dark:border-brand-500/20">
             <Truck className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             <span className="text-xs text-brand-700 dark:text-brand-300">
               Costo de envío: <strong>{formatPrice(SHIPPING_COST)}</strong> · Tiempo estimado: <strong>30-45 min</strong>
             </span>
           </div>
-          {[
-            { key: "street", label: "Calle y número", placeholder: "Ej: Av. Juárez 123" },
-            { key: "references", label: "Referencias", placeholder: "Ej: Casa azul, frente a la escuela" },
-            { key: "colonia", label: "Colonia", placeholder: "Ej: Centro" },
-            { key: "zip", label: "Código postal", placeholder: "Ej: 38400" },
-            { key: "city", label: "Ciudad", placeholder: "Acámbaro, Gto." },
-            { key: "phone", label: "Teléfono de contacto", placeholder: "418 123 4567" },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="text-xs font-semibold text-slate-600 dark:text-gray-400 mb-1 block">{label}</label>
-              <input
-                type={key === "phone" || key === "zip" ? "tel" : "text"}
-                placeholder={placeholder}
-                value={(address as Record<string, string>)[key]}
-                onChange={(e) => setAddress({ ...address, [key]: e.target.value })}
-                className="w-full text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 dark:focus:ring-brand-500"
-              />
+
+          {/* Direcciones guardadas */}
+          {savedAddresses.length > 0 && (
+            <div className="space-y-2">
+              {savedAddresses.map((addr) => (
+                <button
+                  key={addr.id}
+                  onClick={() => pickSaved(addr)}
+                  className={`w-full flex items-start gap-3 p-3.5 rounded-2xl border-2 transition-all duration-200 text-left ${
+                    selectedId === addr.id
+                      ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+                      : "border-slate-200 dark:border-white/10 bg-white dark:bg-[#0a1628] hover:border-slate-300"
+                  }`}
+                >
+                  <MapPin className="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{addr.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-gray-400 truncate">{addr.street}{addr.colonia ? `, ${addr.colonia}` : ""}</p>
+                  </div>
+                  {selectedId === addr.id && <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 flex-shrink-0" />}
+                </button>
+              ))}
+              <button
+                onClick={pickNew}
+                className={`w-full flex items-center gap-2 p-3 rounded-2xl border-2 border-dashed transition-all duration-200 text-sm font-medium ${
+                  selectedId === "new"
+                    ? "border-brand-500 text-brand-600 dark:text-brand-400"
+                    : "border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400 hover:border-slate-300"
+                }`}
+              >
+                <Plus className="w-4 h-4" /> Usar otra dirección
+              </button>
             </div>
-          ))}
+          )}
+
+          {/* Formulario manual */}
+          {selectedId === "new" && (
+            <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 space-y-3">
+              {[
+                { key: "street", label: "Calle y número", placeholder: "Ej: Av. Juárez 123" },
+                { key: "references", label: "Referencias", placeholder: "Ej: Casa azul, frente a la escuela" },
+                { key: "colonia", label: "Colonia", placeholder: "Ej: Centro" },
+                { key: "zip", label: "Código postal", placeholder: "Ej: 38400" },
+                { key: "city", label: "Ciudad", placeholder: "Acámbaro, Gto." },
+                { key: "phone", label: "Teléfono de contacto", placeholder: "418 123 4567" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-gray-400 mb-1 block">{label}</label>
+                  <input
+                    type={key === "phone" || key === "zip" ? "tel" : "text"}
+                    placeholder={placeholder}
+                    value={(address as Record<string, string>)[key]}
+                    onChange={(e) => setAddress({ ...address, [key]: e.target.value })}
+                    className="w-full text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 dark:focus:ring-brand-500"
+                  />
+                </div>
+              ))}
+              {!IS_DEMO && user && (
+                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400 pt-1">
+                  <input type="checkbox" checked={saveForNext} onChange={(e) => setSaveForNext(e.target.checked)} className="rounded" />
+                  Guardar esta dirección para la próxima vez
+                </label>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       <button
-        onClick={onNext}
-        disabled={!canContinue}
+        onClick={handleContinue}
+        disabled={!canContinue || savingAddress}
         className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base shadow-lg shadow-brand-500/20"
       >
-        Continuar
-        <ChevronRight className="w-5 h-5" />
+        {savingAddress ? "Guardando dirección..." : "Continuar"}
+        {!savingAddress && <ChevronRight className="w-5 h-5" />}
       </button>
     </div>
   );
@@ -885,7 +990,7 @@ export default function CheckoutPage() {
     const supabase = createClient();
     supabase
       .from("businesses")
-      .select("id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key, stripe_charges_enabled")
+      .select("id, owner_id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key, stripe_charges_enabled")
       .in("id", ids)
       .then(({ data }) => setPickupBusinesses((data ?? []) as PickupBusiness[]));
   }, [items]);
@@ -963,6 +1068,17 @@ export default function CheckoutPage() {
       }
 
       if (!firstOrderId) firstOrderId = newOrderId as string;
+
+      const ownerId = pickupBusinesses.find((b) => b.id === businessId)?.owner_id;
+      if (ownerId) {
+        await createNotification(supabase, {
+          user_id: ownerId,
+          type: "new_order",
+          title: `Nuevo pedido de ${customerName}`,
+          body: `${businessItems.length} producto${businessItems.length === 1 ? "" : "s"} · ${formatPrice(businessSubtotal + businessShipping)}`,
+          link: "/dashboard/business/orders",
+        });
+      }
     }
 
     if (payment === "mercadopago" && firstOrderId) {

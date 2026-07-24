@@ -282,6 +282,35 @@ Sesión de puros bugs reales encontrados y corregidos, casi todos reportados por
 
 ---
 
+## 2026-07-23 — Jueves — Home estilo Mercado Libre, vistos recientemente, y menú lateral colapsable
+
+> Entrada reconstruida a partir de los commits reales de este día (no hubo registro en su momento); el detalle de cada cambio sale de los mensajes de commit y el diff, no de memoria de la sesión.
+
+### Home: carrusel de banner y fila de accesos rápidos
+
+- **`HeroCarousel.tsx`:** el banner principal pasó de una imagen estática a un carrusel de 4 diapositivas (Compra local, Publica tu tienda, Cupones con QR, Mapa) con flechas, puntos y auto-avance cada 5.5s, pausado al pasar el mouse; el buscador queda fijo sin importar la diapositiva.
+- La fila de accesos rápidos creció a 11 tarjetas (cupones, negocios verificados, mapa, categorías, productos destacados, publicar tienda, vistos recientemente, menos de $500, más vendidos, entrega a domicilio, pago seguro), cada una totalmente clicable en vez de solo el botón. Después se extrajo a `QuickAccessRow.tsx` (client component) para que las 11 tarjetas se deslicen horizontalmente con flechas a los lados en vez de partirse en dos filas, igual que el resto de carruseles de la app.
+
+### Vistos recientemente, más vendidos y menos de $500: de accesos decorativos a páginas reales
+
+- Nuevo `src/lib/recently-viewed.ts` (localStorage, sin backend) y `TrackRecentlyViewed.tsx`, montado en la página de producto, para registrar cada visita.
+- Tres páginas nuevas: `/vistos-recientemente` (lee el historial local del navegador), `/mas-vendidos` (ordena por ventas reales, misma RPC que Productos Destacados), `/menos-de-500` (filtra productos reales con precio ≤ $500).
+- La tarjeta "Vistos recientemente" de accesos rápidos pasó de un ícono genérico a mostrar la foto, nombre y precio reales del último producto visto, como Mercado Libre.
+
+### Ajustes de navegación en escritorio
+
+- **`DesktopShell.tsx`:** botón con flecha pegado al borde del sidebar que lo desliza fuera de pantalla y expande el contenido a todo el ancho; recuerda la preferencia en `localStorage` entre visitas.
+- Se quitó el ícono de carrito duplicado de la barra superior móvil (`Navbar.tsx`): ya existe siempre visible en la barra inferior, y tenerlo en ambas barras era redundante.
+
+### Página "Más" para compradores y notificaciones con sonido
+
+- Nueva `/mas`, estilo Mercado Libre con los colores de AcambaGo: cabecera con el perfil, y secciones Mi actividad (pedidos, vistos recientemente, favoritos, cupones), Descubre (categorías, más vendidos, menos de $500, mapa, cupones) y Vender/Cuenta, todo apuntando a páginas reales ya existentes. La pestaña inferior que antes decía "Perfil" ahora dice "Más" y lleva ahí para compradores; vendedores y admin siguen yendo directo a su panel. En escritorio, "Mi panel" solo era alcanzable desde la barra inferior móvil — se corrigió para que el sidebar de escritorio también diga "Más" y lleve a `/mas` para compradores.
+- El beep (Web Audio API) que ya usaba el panel del vendedor para pedido nuevo se extrajo a `lib/notification-sound.ts` compartido, y se conectó también del lado del comprador: en `/perfil` (cambio de estado de cualquier pedido) y en `/checkout/tracking` (avance en vivo del pedido que se está siguiendo). Antes solo el vendedor escuchaba algo; el comprador solo veía el toast si tenía la pantalla abierta.
+
+**Publicación:** 9 commits — `c1c3492` (banner carrusel + accesos rápidos), `dc21779` (registro de vistos recientemente), `1fa9394` (páginas reales de vistos/más vendidos/menos de 500), `6f424e0` (accesos rápidos deslizable + vistos recientemente real), `2e78e02` (flecha para ocultar sidebar), `85e91c3` (fix ícono de carrito duplicado), `4ec2c73` (página "Más"), `60f31a4` (sonido también para el comprador), `7698abe` (fix "Más" inalcanzable desde escritorio).
+
+---
+
 ## 2026-07-24 — Viernes — Modo Mi cuenta/Mi tienda, direcciones guardadas, inventario, preguntas, y un crash que solo pasaba con sesión iniciada
 
 Día largo con dos sesiones de trabajo separadas: una en la mañana (funcionalidad nueva) y otra en la tarde (bugs reales encontrados por el usuario probando en su celular y en escritorio).

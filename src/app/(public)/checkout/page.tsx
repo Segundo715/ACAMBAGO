@@ -220,7 +220,7 @@ function Step1({
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Ej: Sin picante, empaque especial, instrucciones de entrega..."
+          placeholder="Ej: talla, color, empaque especial, instrucciones de entrega..."
           rows={2}
           className="w-full text-sm bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-400 dark:focus:ring-brand-500 resize-none"
         />

@@ -45,6 +45,9 @@ export interface Business {
   mp_access_token?: string;
   stripe_account_id?: string;
   stripe_charges_enabled?: boolean;
+  pickup_enabled?: boolean;
+  meeting_enabled?: boolean;
+  home_enabled?: boolean;
   rating_avg: number;
   rating_count: number;
   is_approved: boolean;

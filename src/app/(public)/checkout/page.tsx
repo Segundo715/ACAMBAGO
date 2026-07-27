@@ -59,6 +59,9 @@ interface PickupBusiness {
   bank_clabe: string | null;
   mp_public_key: string | null;
   stripe_charges_enabled: boolean;
+  pickup_enabled: boolean;
+  meeting_enabled: boolean;
+  home_enabled: boolean;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -318,6 +321,22 @@ function Step2({
     setAddress({ street: "", references: "", zip: "", colonia: "", city: "Acámbaro, Gto.", phone: "" });
   };
 
+  const isEnabled = (key: "pickup_enabled" | "meeting_enabled" | "home_enabled") =>
+    IS_DEMO || pickupBusinesses.length === 0 || pickupBusinesses.every((b) => b[key] !== false);
+
+  const deliveryOptions = [
+    { id: "pickup", icon: Store, label: "Recoger", sub: "En tienda", available: isEnabled("pickup_enabled") },
+    { id: "meeting", icon: MapPin, label: "Punto", sub: "De reunión", available: isEnabled("meeting_enabled") },
+    { id: "home", icon: Truck, label: "Domicilio", sub: `+${formatPrice(SHIPPING_COST)}`, available: isEnabled("home_enabled") },
+  ].filter((opt) => opt.available);
+
+  useEffect(() => {
+    if (!deliveryOptions.some((opt) => opt.id === method) && deliveryOptions.length > 0) {
+      setMethod(deliveryOptions[0].id as DeliveryMethod);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupBusinesses]);
+
   const canContinue =
     method === "pickup" ||
     (method === "meeting" && meetingPoint !== "") ||
@@ -346,12 +365,8 @@ function Step2({
   return (
     <div className="space-y-4">
       {/* Method selector */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { id: "pickup", icon: Store, label: "Recoger", sub: "En tienda" },
-          { id: "meeting", icon: MapPin, label: "Punto", sub: "De reunión" },
-          { id: "home", icon: Truck, label: "Domicilio", sub: `+${formatPrice(SHIPPING_COST)}` },
-        ].map(({ id, icon: Icon, label, sub }) => (
+      <div className={`grid gap-2 ${deliveryOptions.length === 3 ? "grid-cols-3" : deliveryOptions.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+        {deliveryOptions.map(({ id, icon: Icon, label, sub }) => (
           <button
             key={id}
             onClick={() => setMethod(id as DeliveryMethod)}
@@ -990,7 +1005,7 @@ export default function CheckoutPage() {
     const supabase = createClient();
     supabase
       .from("businesses")
-      .select("id, owner_id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key, stripe_charges_enabled")
+      .select("id, owner_id, name, address, latitude, longitude, bank_name, bank_holder, bank_clabe, mp_public_key, stripe_charges_enabled, pickup_enabled, meeting_enabled, home_enabled")
       .in("id", ids)
       .then(({ data }) => setPickupBusinesses((data ?? []) as PickupBusiness[]));
   }, [items]);

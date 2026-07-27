@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
-import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2, Plus } from "lucide-react";
+import { Settings, MapPin, Save, Upload, LocateFixed, CreditCard, CheckCircle2, Plus, Store, Truck } from "lucide-react";
 import { loadOwnedBusinesses } from "@/lib/current-business";
 import CategorySelect from "@/components/ui/CategorySelect";
 import toast from "react-hot-toast";
@@ -98,6 +98,11 @@ function SettingsContent() {
       return;
     }
 
+    if (!business.pickup_enabled && !business.meeting_enabled && !business.home_enabled) {
+      toast.error("Activa al menos un método de entrega.");
+      return;
+    }
+
     setSaving(true);
 
     let image_url = business.image_url;
@@ -126,6 +131,9 @@ function SettingsContent() {
       bank_clabe: business.bank_clabe || null,
       mp_public_key: business.mp_public_key || null,
       mp_access_token: business.mp_access_token || null,
+      pickup_enabled: business.pickup_enabled ?? true,
+      meeting_enabled: business.meeting_enabled ?? true,
+      home_enabled: business.home_enabled ?? true,
     };
 
     const { error } = await supabase.from("businesses").update(payload).eq("id", business.id);
@@ -140,6 +148,9 @@ function SettingsContent() {
 
   const update = (key: keyof Business, val: string | number) =>
     setBusiness((prev) => ({ ...prev, [key]: val }));
+
+  const toggleDelivery = (key: "pickup_enabled" | "meeting_enabled" | "home_enabled") =>
+    setBusiness((prev) => ({ ...prev, [key]: !(prev[key] ?? true) }));
 
   if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map((i) => <div key={i} className="h-12 bg-slate-100 dark:bg-white/5 rounded-xl" />)}</div>;
 
@@ -258,6 +269,50 @@ function SettingsContent() {
               </div>
             </div>
           </details>
+        </div>
+
+        <div className="card p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Truck className="w-4 h-4 text-brand-600" />
+            Configuración de entregas
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Elige cómo entregas tus pedidos. Al cliente solo se le mostrarán los métodos que actives aquí.
+          </p>
+
+          {([
+            { key: "pickup_enabled", icon: Store, label: "Recoger en tienda", sub: "El cliente pasa por su pedido a tu negocio" },
+            { key: "meeting_enabled", icon: MapPin, label: "Punto de reunión", sub: "Acuerdan un lugar público para la entrega" },
+            { key: "home_enabled", icon: Truck, label: "Entrega a domicilio", sub: "Llevas el pedido a la dirección del cliente" },
+          ] as const).map(({ key, icon: Icon, label, sub }) => {
+            const enabled = business[key] ?? true;
+            return (
+              <div key={key} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 dark:text-white">{label}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{sub}</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  onClick={() => toggleDelivery(key)}
+                  className={`relative w-11 h-6 rounded-full flex-shrink-0 transition-colors ${
+                    enabled ? "bg-brand-500" : "bg-slate-300 dark:bg-white/20"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      enabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <div className="card p-6 space-y-4">

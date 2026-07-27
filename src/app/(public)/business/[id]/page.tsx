@@ -6,6 +6,7 @@ import StarRating from "@/components/business/StarRating";
 import CouponCard from "@/components/coupons/CouponCard";
 import ReviewSection from "./ReviewSection";
 import ShareButton from "@/components/ui/ShareButton";
+import MessageSellerButton from "@/components/ui/MessageSellerButton";
 import DemoBusinessPage from "@/components/business/DemoBusinessPage";
 import ProductsReel from "@/components/ui/ProductsReel";
 import {
@@ -142,6 +143,7 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
                     <Phone className="w-4 h-4" /> WhatsApp
                   </a>
                 )}
+                <MessageSellerButton businessId={business.id} variant="solid" />
                 <ShareButton businessName={business.name} />
               </div>
             </div>

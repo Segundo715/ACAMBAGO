@@ -105,7 +105,7 @@ export interface ProductQuestion {
   created_at: string;
 }
 
-export type NotificationType = "order_status" | "new_order" | "question_answered" | "new_question";
+export type NotificationType = "order_status" | "new_order" | "question_answered" | "new_question" | "new_message";
 
 export interface Notification {
   id: string;
@@ -115,6 +115,32 @@ export interface Notification {
   body?: string;
   link?: string;
   is_read: boolean;
+  created_at: string;
+}
+
+export type MessageSenderRole = "customer" | "business";
+
+export interface Conversation {
+  id: string;
+  business_id: string;
+  user_id: string;
+  customer_name: string;
+  product_id?: string;
+  product_name?: string;
+  last_message?: string;
+  last_sender_role?: MessageSenderRole;
+  last_message_at: string;
+  customer_read_at: string;
+  business_read_at?: string;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender_role: MessageSenderRole;
+  sender_id: string;
+  body: string;
   created_at: string;
 }
 

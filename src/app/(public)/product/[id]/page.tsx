@@ -21,6 +21,7 @@ import ProductGallery from "./ProductGallery";
 import TrackRecentlyViewed from "./TrackRecentlyViewed";
 import ProductQA from "./ProductQA";
 import AddToCartButton from "@/components/ui/AddToCartButton";
+import MessageSellerButton from "@/components/ui/MessageSellerButton";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80";
 
@@ -247,6 +248,9 @@ export default async function ProductPage({
                 <MessageCircle className="w-4 h-4 text-green-500" />
                 Contactar por WhatsApp
               </a>
+            )}
+            {!isDemoProduct && business && (
+              <MessageSellerButton businessId={business.id} productId={product.id} productName={product.name} />
             )}
           </div>
 

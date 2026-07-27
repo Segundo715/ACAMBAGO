@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Ticket, Settings, ScanLine, Star, ShoppingBag, BarChart2, MessageSquare, Bell } from "lucide-react";
+import { LayoutDashboard, Package, Ticket, Settings, ScanLine, Star, ShoppingBag, BarChart2, MessageSquare, MessageCircle, Bell } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard/business",                label: "Resumen",         icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard/business/orders",         label: "Pedidos",         icon: ShoppingBag },
   { href: "/dashboard/business/coupons",        label: "Cupones",         icon: Ticket },
   { href: "/dashboard/business/coupons/scan",   label: "Escáner QR",      icon: ScanLine },
+  { href: "/dashboard/business/mensajes",       label: "Mensajes",        icon: MessageCircle },
   { href: "/dashboard/business/preguntas",      label: "Preguntas",       icon: MessageSquare },
   { href: "/dashboard/business/notificaciones", label: "Notificaciones",  icon: Bell },
   { href: "/dashboard/business/reviews",        label: "Reseñas",         icon: Star },

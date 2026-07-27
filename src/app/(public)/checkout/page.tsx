@@ -1035,6 +1035,13 @@ export default function CheckoutPage() {
     const supabase = createClient();
     const customerName = user.fullName ?? user.firstName ?? "Cliente";
     const phone = delivery === "home" ? address.phone : contactPhone;
+    const selectedMeetingPoint = DEMO_MEETING_POINTS.find((p) => p.id === meetingPoint);
+    const deliveryDetails =
+      delivery === "home"
+        ? address
+        : delivery === "meeting"
+        ? { meeting_point_name: selectedMeetingPoint?.name ?? meetingPoint, meeting_point_address: selectedMeetingPoint?.address ?? "" }
+        : null;
 
     const byBusiness = new Map<string, typeof items>();
     for (const item of items) {
@@ -1063,7 +1070,7 @@ export default function CheckoutPage() {
         p_status: "pendiente",
         p_delivery_method: delivery,
         p_payment_method: payment,
-        p_address: delivery === "home" ? address : null,
+        p_address: deliveryDetails,
         p_note: note || null,
         p_subtotal: businessSubtotal,
         p_shipping_cost: businessShipping,

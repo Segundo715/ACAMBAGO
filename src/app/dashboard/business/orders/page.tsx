@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ShoppingBag, Phone, Check, Truck, Clock, Search, AlertTriangle } from "lucide-react";
+import { ShoppingBag, Phone, Check, Truck, Clock, Search, AlertTriangle, Store, MapPin, MessageSquare, User } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Order, OrderStatus, PaymentMethod } from "@/types";
+import { Order, OrderStatus, PaymentMethod, DeliveryMethod } from "@/types";
 import { OrderStatusIcon, OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 import { loadOwnedBusinesses } from "@/lib/current-business";
 import { createNotification } from "@/lib/notifications";
@@ -14,16 +14,33 @@ import toast from "react-hot-toast";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const IS_DEMO = !SUPABASE_URL || SUPABASE_URL.includes("your-project") || SUPABASE_URL === "https://placeholder.supabase.co";
 
+interface OrderItemRow {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 interface OrderRow {
   id: string;
   user_id: string;
   customer: string;
   phone: string;
-  items: string[];
+  phoneDisplay: string;
+  items: OrderItemRow[];
   total: number;
+  subtotal: number;
+  shippingCost: number;
   status: OrderStatus;
   date: string;
-  address: string;
+  deliveryMethod: DeliveryMethod;
+  addressStreet: string;
+  addressColonia: string;
+  addressZip: string;
+  addressCity: string;
+  addressReferences: string;
+  meetingPointName: string;
+  meetingPointAddress: string;
+  note: string;
   payment_method: PaymentMethod;
 }
 
@@ -36,14 +53,20 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   stripe: "Tarjeta (Stripe)",
 };
 
+const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
+  pickup: "Recoger en tienda",
+  meeting: "Punto de reunión",
+  home: "Entrega a domicilio",
+};
+
 const DEMO_ORDERS: OrderRow[] = [
-  { id: "ORD-001", user_id: "demo", customer: "María García", phone: "4151234567", items: ["Taladro Percutor 750W"], total: 889, status: "pendiente", date: "27 Jun 2026 · 10:32", address: "Av. Morelos 45, Centro", payment_method: "cash" },
-  { id: "ORD-002", user_id: "demo", customer: "Carlos Ramírez", phone: "4151234568", items: ["Playera Casual M", "Tenis Runner Blanco"], total: 869, status: "en_camino", date: "26 Jun 2026 · 17:15", address: "Calle Hidalgo 12, Col. Lomas", payment_method: "transfer" },
-  { id: "ORD-003", user_id: "demo", customer: "Ana Martínez", phone: "4151234569", items: ["Kit Fumigador Pro"], total: 280, status: "entregado", date: "26 Jun 2026 · 14:02", address: "Blvd. Insurgentes 88", payment_method: "cod" },
-  { id: "ORD-004", user_id: "demo", customer: "José López", phone: "4151234570", items: ["Pintura Vinílica 4L Blanco"], total: 320, status: "cancelado", date: "25 Jun 2026 · 09:45", address: "Calle Juárez 3", payment_method: "cash" },
-  { id: "ORD-005", user_id: "demo", customer: "Luisa Torres", phone: "4151234571", items: ["Taladro Percutor 750W", "Kit Fumigador Pro"], total: 1169, status: "pendiente", date: "25 Jun 2026 · 08:20", address: "Av. 5 de Febrero 201", payment_method: "transfer" },
-  { id: "ORD-006", user_id: "demo", customer: "Roberto Sánchez", phone: "4151234572", items: ["Cortadora de Césped"], total: 1450, status: "en_camino", date: "24 Jun 2026 · 15:00", address: "Privada Las Flores 7", payment_method: "cash" },
-  { id: "ORD-007", user_id: "demo", customer: "Patricia Hernández", phone: "4151234573", items: ["Nivel Láser Digital"], total: 580, status: "entregado", date: "23 Jun 2026 · 11:30", address: "Calle Obregón 55", payment_method: "card" },
+  { id: "ORD-001", user_id: "demo", customer: "María García", phone: "4151234567", phoneDisplay: "415 123 4567", items: [{ name: "Taladro Percutor 750W", quantity: 1, price: 889 }], total: 889, subtotal: 889, shippingCost: 0, status: "pendiente", date: "27 Jun 2026 · 10:32", deliveryMethod: "home", addressStreet: "Av. Morelos 45", addressColonia: "Centro", addressZip: "38600", addressCity: "Acámbaro, Gto.", addressReferences: "Casa azul de dos pisos", meetingPointName: "", meetingPointAddress: "", note: "Por favor tocar el timbre, no hay perro.", payment_method: "cash" },
+  { id: "ORD-002", user_id: "demo", customer: "Carlos Ramírez", phone: "4151234568", phoneDisplay: "415 123 4568", items: [{ name: "Playera Casual M", quantity: 1, price: 349 }, { name: "Tenis Runner Blanco", quantity: 1, price: 520 }], total: 869, subtotal: 869, shippingCost: 0, status: "en_camino", date: "26 Jun 2026 · 17:15", deliveryMethod: "meeting", addressStreet: "", addressColonia: "", addressZip: "", addressCity: "", addressReferences: "", meetingPointName: "Plaza Principal", meetingPointAddress: "Jardín Hidalgo, Centro", note: "", payment_method: "transfer" },
+  { id: "ORD-003", user_id: "demo", customer: "Ana Martínez", phone: "4151234569", phoneDisplay: "415 123 4569", items: [{ name: "Kit Fumigador Pro", quantity: 1, price: 280 }], total: 280, subtotal: 280, shippingCost: 0, status: "entregado", date: "26 Jun 2026 · 14:02", deliveryMethod: "pickup", addressStreet: "", addressColonia: "", addressZip: "", addressCity: "", addressReferences: "", meetingPointName: "", meetingPointAddress: "", note: "", payment_method: "cod" },
+  { id: "ORD-004", user_id: "demo", customer: "José López", phone: "4151234570", phoneDisplay: "415 123 4570", items: [{ name: "Pintura Vinílica 4L Blanco", quantity: 1, price: 320 }], total: 320, subtotal: 320, shippingCost: 0, status: "cancelado", date: "25 Jun 2026 · 09:45", deliveryMethod: "pickup", addressStreet: "", addressColonia: "", addressZip: "", addressCity: "", addressReferences: "", meetingPointName: "", meetingPointAddress: "", note: "", payment_method: "cash" },
+  { id: "ORD-005", user_id: "demo", customer: "Luisa Torres", phone: "4151234571", phoneDisplay: "415 123 4571", items: [{ name: "Taladro Percutor 750W", quantity: 1, price: 889 }, { name: "Kit Fumigador Pro", quantity: 1, price: 280 }], total: 1169, subtotal: 1134, shippingCost: 35, status: "pendiente", date: "25 Jun 2026 · 08:20", deliveryMethod: "home", addressStreet: "Av. 5 de Febrero 201", addressColonia: "Las Américas", addressZip: "38610", addressCity: "Acámbaro, Gto.", addressReferences: "Frente a la farmacia", meetingPointName: "", meetingPointAddress: "", note: "Entregar después de las 6pm.", payment_method: "transfer" },
+  { id: "ORD-006", user_id: "demo", customer: "Roberto Sánchez", phone: "4151234572", phoneDisplay: "415 123 4572", items: [{ name: "Cortadora de Césped", quantity: 1, price: 1450 }], total: 1450, subtotal: 1450, shippingCost: 0, status: "en_camino", date: "24 Jun 2026 · 15:00", deliveryMethod: "meeting", addressStreet: "", addressColonia: "", addressZip: "", addressCity: "", addressReferences: "", meetingPointName: "Terminal de Autobuses", meetingPointAddress: "Salida a Celaya", note: "", payment_method: "cash" },
+  { id: "ORD-007", user_id: "demo", customer: "Patricia Hernández", phone: "4151234573", phoneDisplay: "415 123 4573", items: [{ name: "Nivel Láser Digital", quantity: 1, price: 580 }], total: 580, subtotal: 580, shippingCost: 0, status: "entregado", date: "23 Jun 2026 · 11:30", deliveryMethod: "pickup", addressStreet: "", addressColonia: "", addressZip: "", addressCity: "", addressReferences: "", meetingPointName: "", meetingPointAddress: "", note: "", payment_method: "card" },
 ];
 
 const TABS = [
@@ -57,16 +80,29 @@ const TABS = [
 type Tab = typeof TABS[number]["key"];
 
 function orderToRow(o: Order): OrderRow {
+  const addr = o.address ?? {};
+  const rawPhone = o.customer_phone ?? addr.phone ?? "";
   return {
     id: o.id,
     user_id: o.user_id,
     customer: o.customer_name,
-    phone: (o.customer_phone ?? o.address?.phone ?? "").replace(/\D/g, ""),
-    items: (o.order_items ?? []).map((it) => `${it.name} x${it.quantity}`),
+    phone: rawPhone.replace(/\D/g, ""),
+    phoneDisplay: rawPhone,
+    items: (o.order_items ?? []).map((it) => ({ name: it.name, quantity: it.quantity, price: it.price })),
     total: o.total,
+    subtotal: o.subtotal,
+    shippingCost: o.shipping_cost,
     status: o.status,
     date: new Date(o.created_at).toLocaleString("es-MX", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-    address: o.delivery_method === "home" ? (o.address?.street ?? "") : o.delivery_method === "meeting" ? "Punto de reunión" : "Recoger en tienda",
+    deliveryMethod: o.delivery_method,
+    addressStreet: addr.street ?? "",
+    addressColonia: addr.colonia ?? "",
+    addressZip: addr.zip ?? "",
+    addressCity: addr.city ?? "",
+    addressReferences: addr.references ?? "",
+    meetingPointName: addr.meeting_point_name ?? "",
+    meetingPointAddress: addr.meeting_point_address ?? "",
+    note: o.note ?? "",
     payment_method: o.payment_method,
   };
 }
@@ -148,7 +184,7 @@ export default function OrdersPage() {
         user_id: order.user_id,
         type: "order_status",
         title: `Tu pedido cambió a "${STATUS_LABELS[status]}"`,
-        body: order.items[0] ? `${order.items[0]}${order.items.length > 1 ? ` y ${order.items.length - 1} más` : ""}` : undefined,
+        body: order.items[0] ? `${order.items[0].name} x${order.items[0].quantity}${order.items.length > 1 ? ` y ${order.items.length - 1} más` : ""}` : undefined,
         link: `/checkout/tracking?order=${order.id}`,
       });
     }
@@ -251,7 +287,9 @@ export default function OrdersPage() {
                       <p className="font-medium text-slate-900 dark:text-white text-sm">{order.customer}</p>
                       <span className="text-xs text-slate-400">#{order.id.slice(0, 8)}</span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{order.items.join(", ")}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {order.items.map((it) => `${it.name} x${it.quantity}`).join(", ")}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <OrderStatusBadge status={order.status} className="hidden sm:inline-flex" />
@@ -262,27 +300,68 @@ export default function OrdersPage() {
 
                 {/* Expanded detail */}
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-white/10 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+                  <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-white/10 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-xs text-slate-400 mb-0.5">Fecha</p>
-                        <p className="text-slate-700 dark:text-slate-300">{order.date}</p>
+                        <p className="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><User className="w-3 h-3" /> Cliente</p>
+                        <p className="text-slate-700 dark:text-slate-300">{order.customer}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 mb-0.5">Dirección</p>
-                        <p className="text-slate-700 dark:text-slate-300">{order.address}</p>
+                        <p className="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><Phone className="w-3 h-3" /> Teléfono / WhatsApp</p>
+                        <p className="text-slate-700 dark:text-slate-300">{order.phoneDisplay || "No proporcionado"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><Clock className="w-3 h-3" /> Fecha y hora del pedido</p>
+                        <p className="text-slate-700 dark:text-slate-300">{order.date}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-400 mb-0.5">Pago</p>
                         <p className="text-slate-700 dark:text-slate-300">{PAYMENT_LABELS[order.payment_method]}</p>
                       </div>
-                      <div>
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-slate-400 mb-0.5 flex items-center gap-1">
+                          {order.deliveryMethod === "home" ? <Truck className="w-3 h-3" /> : order.deliveryMethod === "meeting" ? <MapPin className="w-3 h-3" /> : <Store className="w-3 h-3" />}
+                          Método de entrega: {DELIVERY_LABELS[order.deliveryMethod]}
+                        </p>
+                        {order.deliveryMethod === "home" && (
+                          <div className="text-slate-700 dark:text-slate-300 space-y-0.5">
+                            <p>{[order.addressStreet, order.addressColonia, order.addressCity].filter(Boolean).join(", ")}{order.addressZip ? ` · CP ${order.addressZip}` : ""}</p>
+                            {order.addressReferences && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Referencias: {order.addressReferences}</p>
+                            )}
+                          </div>
+                        )}
+                        {order.deliveryMethod === "meeting" && (
+                          <p className="text-slate-700 dark:text-slate-300">
+                            {order.meetingPointName || "No especificado"}
+                            {order.meetingPointAddress && <span className="text-xs text-slate-500 dark:text-slate-400"> · {order.meetingPointAddress}</span>}
+                          </p>
+                        )}
+                        {order.deliveryMethod === "pickup" && (
+                          <p className="text-slate-700 dark:text-slate-300">El cliente recogerá el pedido en tu negocio.</p>
+                        )}
+                      </div>
+                      {order.note && (
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-slate-400 mb-0.5 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> Notas del cliente</p>
+                          <p className="text-slate-700 dark:text-slate-300 italic">&ldquo;{order.note}&rdquo;</p>
+                        </div>
+                      )}
+                      <div className="sm:col-span-2">
                         <p className="text-xs text-slate-400 mb-0.5">Productos</p>
                         <ul className="space-y-0.5">
-                          {order.items.map((item) => (
-                            <li key={item} className="text-slate-700 dark:text-slate-300">• {item}</li>
+                          {order.items.map((item, i) => (
+                            <li key={i} className="text-slate-700 dark:text-slate-300 flex justify-between">
+                              <span>{item.name} x{item.quantity}</span>
+                              <span className="text-slate-500 dark:text-slate-400">{formatPrice(item.price * item.quantity)}</span>
+                            </li>
                           ))}
                         </ul>
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-white/10 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(order.subtotal)}</span></div>
+                          <div className="flex justify-between"><span>Envío</span><span>{order.shippingCost === 0 ? "Gratis" : formatPrice(order.shippingCost)}</span></div>
+                          <div className="flex justify-between font-semibold text-sm text-slate-800 dark:text-white"><span>Total</span><span>{formatPrice(order.total)}</span></div>
+                        </div>
                       </div>
                     </div>
                     {order.payment_method === "transfer" && order.status === "pendiente" && (

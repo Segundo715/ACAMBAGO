@@ -346,3 +346,62 @@ Reportado con captura: al abrir el selector de categoría en Configuración, el 
 **Publicación:** mañana — `9eb5561` (selector Mi cuenta/Mi tienda + campana), `af57775` (direcciones guardadas), `3358c9c` (perfil reorganizado en panel), `b28cc49` (inventario real), `2b1d309` (preguntas + notificaciones persistentes). Tarde — `c4b1191` (fix crash de la campana de notificaciones), `0d2ff1e` (intento con `color-scheme`), `3d718c0` (`CategorySelect` propio), `94f55d6` (placeholder del checkout), `5fa2aa3` (pausar producto), `41a27d5` (aviso de pedido en todo el panel). `npm run build` y `eslint` verificados sin errores antes de cada subida de la tarde.
 
 ---
+
+## 2026-07-27 — Lunes — Métodos de entrega configurables, información de pedidos incompleta en el panel, y buzón de mensajería privada
+
+### Configuración de métodos de entrega por negocio
+
+Pedido explícito del usuario: que cada tienda pueda activar/desactivar de forma independiente Recoger en tienda, Punto de reunión y Entrega a domicilio, y que el checkout solo le muestre al cliente los métodos que el negocio tenga activados (algunas tiendas no hacen domicilio, otras no usan punto de reunión).
+
+- Nueva migración `supabase/delivery-methods.sql`: columnas `pickup_enabled`, `meeting_enabled`, `home_enabled` en `businesses`, todas `true` por defecto para no romper negocios ya existentes.
+- Nueva sección "Configuración de entregas" en `dashboard/business/settings/page.tsx`, con un switch por método; bloquea el guardado si se desactivan los tres a la vez.
+- `(public)/checkout/page.tsx`: el `select` a `businesses` ahora trae las tres columnas nuevas; el selector de método del paso 2 se filtra por **intersección** de los negocios presentes en el carrito (mismo patrón que ya se usaba para solo ofrecer Mercado Pago/Stripe cuando todas las tiendas del carrito los soportan). Si el método ya elegido deja de estar disponible, se cambia automáticamente al primero disponible.
+- Verificado contra la base real (con autorización explícita del usuario): se crearon pedidos de prueba llamando al mismo RPC que usa el checkout para confirmar el filtrado, y se borraron al terminar.
+
+### El panel de pedidos no mostraba toda la información que el cliente capturó al comprar
+
+- Bug real encontrado: cuando el cliente elegía "Punto de reunión" en el checkout, se mandaba `p_address: null` al RPC — el punto elegido (nombre y dirección) **nunca llegaba a guardarse**, se perdía por completo tras confirmar el pedido.
+- Además, `orderToRow()` en `dashboard/business/orders/page.tsx` reducía cada pedido a un resumen pobre: de la dirección completa (JSONB) solo tomaba `street` (ignorando colonia, CP, ciudad y referencias), y **nunca leía `note`** aunque sí estuviera guardada en la base de datos. El teléfono tampoco se mostraba como texto, solo se usaba para armar el link de WhatsApp.
+- Fix: el checkout ahora arma `deliveryDetails` según el método (domicilio → dirección completa; punto de reunión → `{ meeting_point_name, meeting_point_address }`; recoger → `null`, no aplica). El detalle expandible de cada pedido en el panel ahora muestra: cliente, teléfono, fecha y hora, método de pago, método de entrega con su dirección o punto completo, referencias, notas del cliente, productos con cantidad y precio, y desglose subtotal + envío + total.
+- Verificado con un script temporal contra la base real: se creó un pedido de cada tipo de entrega (mismo RPC que el checkout), se confirmó que toda la información se guarda y se lee correctamente simulando la función real `orderToRow()`, y se borraron los pedidos de prueba al terminar.
+
+### Buzón de mensajería privada cliente-vendedor
+
+El usuario preguntó si existía alguna forma de contactar a una tienda sin usar WhatsApp (ej. preguntar tallas antes de comprar). Ya existía "Preguntas y respuestas" por producto, pero es **pública** (la ve cualquiera que entre al producto) y de una sola pregunta-respuesta, no una conversación privada de varios mensajes.
+
+- Nuevas tablas `conversations` (una por negocio + cliente, con nombre del cliente y producto de contexto guardados como snapshot, igual que `orders.customer_name`) y `messages` (`supabase/messages.sql`), con Supabase Realtime habilitado sobre `messages`.
+- Botón "Enviar mensaje" junto al de WhatsApp en la página de producto y en la de la tienda (`MessageSellerButton.tsx`, redirige a login si no hay sesión).
+- Bandejas nuevas: comprador en `/perfil/mensajes`, vendedor en `/dashboard/business/mensajes`, ambas usando el mismo componente de hilo compartido (`ChatThread.tsx`) que se actualiza en vivo vía Realtime (mensajes propios se agregan de forma optimista con la respuesta del insert, los del otro lado llegan por la suscripción — sin duplicados). Cada mensaje nuevo dispara una notificación (tipo `new_message`) al otro lado.
+- Verificado de punta a punta contra la base real: creación de conversación, mensajes en ambos sentidos, actualización de marcas de lectura y último mensaje, notificaciones con el link correcto, y confirmación explícita de que el evento de Realtime sí llega (suscripción de prueba + insert desde otro cliente, con respuesta en menos de un segundo). Todo el rastro de prueba se borró al terminar.
+
+**Publicación:** 3 commits — `15ac069` (métodos de entrega configurables por negocio), `4627434` (información completa de pedidos en el panel), `4e739dc` (buzón de mensajería privada). `npm run build` y `tsc --noEmit` verificados sin errores antes de cada subida.
+
+---
+
+## 2026-07-28 — Martes — Línea suelta en el panel móvil, cupones vencidos sin forma de renovarse, y otro `<select>` nativo ilegible en modo oscuro
+
+### Línea flotante bajo el menú de cuenta en el panel móvil
+
+- Reportado con captura desde el celular: una línea suelta, cortada a la mitad de la pantalla (no llegaba al borde izquierdo), justo debajo del selector de tienda/menú de cuenta en la barra superior del panel de vendedor.
+- Causa raíz: `UserInfo.tsx` lleva un `border-b` pensado para cuando ocupa el ancho completo de la barra lateral de escritorio (donde separa esa sección de la navegación de abajo). En la barra superior **móvil**, el mismo componente vive apretado como un elemento más de una fila `flex` junto a la campana de notificaciones, así que ese borde solo alcanzaba a dibujarse en el ancho de su propia columna angosta, no en el ancho completo de la pantalla — de ahí la línea "flotando" a la mitad.
+- Antes de tocar código, se reprodujo el bug de verdad: se instaló Playwright de forma temporal (`npm install --no-save`, sin tocar `package.json`), se levantó un servidor en modo demo en un puerto aparte (sin tocar `.env.local` ni la base real) y se tomó una captura en viewport de celular con modo oscuro forzado, confirmando visualmente la misma línea que reportó el usuario.
+- Fix: nueva prop `variant` en `UserInfo` (`"sidebar"` por defecto, `"topbar"` para el uso móvil) que omite el borde ahí. Se volvió a capturar la misma pantalla para confirmar que ya no aparece. Playwright y el servidor de prueba se removieron por completo al terminar, sin dejar rastro en `package.json`/`package-lock.json`.
+
+### Cupones vencidos no se podían volver a habilitar de verdad
+
+- El botón "Desactivar/Activar" del panel de cupones solo cambiaba `is_active`, pero la validez real de un cupón (`isCouponValid()` en `src/lib/utils.ts`, usada también por el endpoint de canje por QR) depende **también** de `expires_at`. Un cupón vencido se quedaba inválido para siempre aunque se reactivara con ese botón, sin ningún mensaje que lo explicara.
+- Se agregó "Renovar cupón" en `dashboard/business/coupons/page.tsx`: aparece en vez de "Desactivar" cuando el cupón está vencido, abre un selector de fecha (se puede dejar en blanco para "sin vencimiento") y al confirmar actualiza `expires_at` + `is_active: true` de una vez, dejándolo válido de inmediato tanto para mostrarse al cliente como para canjearse por QR en tienda.
+
+### El popup del `<select>` de "Tipo de descuento" se veía sin texto legible en modo oscuro
+
+- Mismo patrón de bug que ya se había visto antes con el `<select>` de categoría (sesión del 24 de julio, ver arriba): el navegador no puede pintar con transparencia el popup nativo de un `<select>`, así que el fondo translúcido de `.input` (`dark:bg-white/10`) cae a blanco por defecto mientras el texto de las opciones hereda blanco también — texto invisible salvo en la opción resaltada por el propio navegador.
+- Se confirmó por grep que es el **único** `<select>` nativo que queda en toda la app (el de categoría ya se había reemplazado por `CategorySelect.tsx` propio en la sesión del 24 de julio, justo por este mismo problema). Se le dio color explícito a cada `<option>` (`bg-white dark:bg-slate-800 text-slate-900 dark:text-white`).
+- **Nota pendiente para el futuro:** la sesión del 24 de julio dejó registrado que en Edge poner solo `color-scheme: dark` no bastó para el popup del `<select>` de categoría — el navegador lo ignoraba por completo, y por eso se terminó reemplazando por un componente propio en vez de solo darle color a las opciones. Este fix de hoy sí le puso color directo a cada `<option>` (un paso más que aquel intento fallido), pero no se verificó específicamente en Edge. Si el problema vuelve a aparecer ahí, la solución ya probada y confiable es reemplazar este `<select>` también por un componente propio, como se hizo con `CategorySelect.tsx`.
+
+### Cambio de rol temporal (no fue un commit, cambio directo en Supabase)
+
+A pedido del usuario, se cambió el rol de la cuenta de prueba "Luis D Mal" (`ldmh93@gmail.com`, un usuario de prueba de Clerk) de `business` a `admin` directamente en `profiles` para que viera el panel de administración; más tarde en la misma sesión se revirtió a `business` a pedido del usuario, antes de subir el resto de los cambios del día.
+
+**Publicación:** 2 commits — `1d31028` (fix de la línea flotante en el panel móvil), `e5a1f2b` (renovar cupones vencidos + contraste del select de tipo de descuento). `tsc --noEmit` y `npm run lint` verificados sin errores antes de cada subida.
+
+---

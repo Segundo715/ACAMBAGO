@@ -103,7 +103,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell href="/dashboard/business/notificaciones" />
-            <UserInfo />
+            <UserInfo variant="topbar" />
           </div>
         </div>
 

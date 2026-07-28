@@ -11,7 +11,7 @@ import { Business } from "@/types";
 import ShareButton from "@/components/ui/ShareButton";
 import AccountModeSwitcher from "@/components/ui/AccountModeSwitcher";
 
-export default function UserInfo() {
+export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" | "topbar" }) {
   const { user, isLoaded } = useUser();
   const [name, setName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -82,7 +82,10 @@ export default function UserInfo() {
   const canPreviewStore = role === "business" && !!activeBusiness?.id;
 
   return (
-    <div ref={containerRef} className="relative px-3 py-3 border-b border-slate-200 dark:border-white/10">
+    <div
+      ref={containerRef}
+      className={`relative px-3 py-3 ${variant === "sidebar" ? "border-b border-slate-200 dark:border-white/10" : ""}`}
+    >
       <div className="flex items-center gap-3">
         {canPreviewStore ? (
           <Link

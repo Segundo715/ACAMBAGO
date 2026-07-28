@@ -100,8 +100,8 @@ export default function NewCouponPage() {
             <div>
               <label className="label">Tipo de descuento *</label>
               <select value={discountType} onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")} className="input">
-                <option value="percent">Porcentaje (%)</option>
-                <option value="fixed">Monto fijo ($)</option>
+                <option value="percent" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Porcentaje (%)</option>
+                <option value="fixed" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Monto fijo ($)</option>
               </select>
             </div>
             <div>

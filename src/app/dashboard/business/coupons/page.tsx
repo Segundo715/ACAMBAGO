@@ -14,6 +14,8 @@ export default function CouponsPage() {
   const { user, isLoaded } = useUser();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [renewingId, setRenewingId] = useState<string | null>(null);
+  const [renewDate, setRenewDate] = useState("");
   const supabase = createClient();
 
   useEffect(() => {
@@ -46,6 +48,22 @@ export default function CouponsPage() {
     toast.success("Cupón eliminado");
   };
 
+  const confirmRenew = async (coupon: Coupon) => {
+    const { error } = await supabase
+      .from("coupons")
+      .update({ expires_at: renewDate || null, is_active: true })
+      .eq("id", coupon.id);
+    if (error) {
+      toast.error("No se pudo renovar el cupón");
+      return;
+    }
+    setCoupons((prev) =>
+      prev.map((c) => (c.id === coupon.id ? { ...c, expires_at: renewDate || undefined, is_active: true } : c))
+    );
+    setRenewingId(null);
+    toast.success("Cupón renovado");
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -74,27 +92,64 @@ export default function CouponsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {coupons.map((c) => (
-            <div key={c.id} className="space-y-2">
-              <CouponCard coupon={c} showQR />
-              <div className="flex gap-2 px-1">
-                <button
-                  onClick={() => toggleActive(c)}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                    c.is_active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
-                  }`}
-                >
-                  {c.is_active ? "Desactivar" : "Activar"}
-                </button>
-                <button
-                  onClick={() => deleteCoupon(c.id)}
-                  className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"
-                >
-                  Eliminar
-                </button>
+          {coupons.map((c) => {
+            const isExpired = c.expires_at ? new Date(c.expires_at) < new Date() : false;
+            const isRenewing = renewingId === c.id;
+            return (
+              <div key={c.id} className="space-y-2">
+                <CouponCard coupon={c} showQR />
+                <div className="flex gap-2 px-1 flex-wrap items-center">
+                  {isExpired ? (
+                    isRenewing ? (
+                      <>
+                        <input
+                          type="date"
+                          value={renewDate}
+                          onChange={(e) => setRenewDate(e.target.value)}
+                          min={new Date().toISOString().split("T")[0]}
+                          className="input text-xs py-1.5 px-2 w-auto"
+                        />
+                        <button
+                          onClick={() => confirmRenew(c)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/20 transition-colors"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          onClick={() => setRenewingId(null)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => { setRenewingId(c.id); setRenewDate(""); }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors"
+                      >
+                        Renovar cupón
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => toggleActive(c)}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                        c.is_active ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"
+                      }`}
+                    >
+                      {c.is_active ? "Desactivar" : "Activar"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteCoupon(c.id)}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

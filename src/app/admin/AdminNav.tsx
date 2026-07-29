@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LayoutDashboard, Eye, LogOut } from "lucide-react";
+import { LayoutDashboard, Store, Users, Eye, LogOut } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 const tabs = [
-  { id: "resumen",  label: "Resumen",  emoji: "📊" },
-  { id: "negocios", label: "Negocios", emoji: "🏪" },
-  { id: "usuarios", label: "Usuarios", emoji: "👥" },
+  { id: "resumen",  label: "Resumen",  icon: LayoutDashboard },
+  { id: "negocios", label: "Negocios", icon: Store },
+  { id: "usuarios", label: "Usuarios", icon: Users },
 ];
 
 export default function AdminNav() {
@@ -20,7 +20,7 @@ export default function AdminNav() {
 
   return (
     <nav className="flex-1 p-3 space-y-0.5">
-      {tabs.map(({ id, label, emoji }) => (
+      {tabs.map(({ id, label, icon: Icon }) => (
         <Link
           key={id}
           href={`/admin?tab=${id}`}
@@ -30,7 +30,7 @@ export default function AdminNav() {
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10"
           }`}
         >
-          <span className="text-base leading-none">{emoji}</span>
+          <Icon className="w-4 h-4 flex-shrink-0" />
           {label}
         </Link>
       ))}

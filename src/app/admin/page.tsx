@@ -8,7 +8,7 @@ import AssignCouponsButton from "./AssignCouponsButton";
 import CategoryIcon from "@/components/ui/CategoryIcon";
 import {
   CheckCircle, Store, Users, Package, Clock, TrendingUp,
-  AlertCircle, ShieldCheck, Star, MapPin, Crown, User, Ticket,
+  AlertCircle, ShieldCheck, Star, MapPin, Crown, User, Ticket, LayoutDashboard,
 } from "lucide-react";
 import Link from "next/link";
 import { DEMO_BUSINESSES, DEMO_PRODUCTS } from "@/lib/demo-data";
@@ -94,9 +94,9 @@ export default async function AdminPage({
   const clientes = users.filter((u) => u.role === "client");
 
   const tabs = [
-    { id: "resumen",   label: "Resumen",   emoji: "📊" },
-    { id: "negocios",  label: "Negocios",  emoji: "🏪", badge: pending.length > 0 ? pending.length : undefined },
-    { id: "usuarios",  label: "Usuarios",  emoji: "👥" },
+    { id: "resumen",   label: "Resumen",   icon: LayoutDashboard },
+    { id: "negocios",  label: "Negocios",  icon: Store, badge: pending.length > 0 ? pending.length : undefined },
+    { id: "usuarios",  label: "Usuarios",  icon: Users },
   ];
 
   return (
@@ -121,7 +121,7 @@ export default async function AdminPage({
 
       {/* Tabs */}
       <div className="flex gap-1 mb-8 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl w-fit">
-        {tabs.map(({ id, label, emoji, badge }) => (
+        {tabs.map(({ id, label, icon: Icon, badge }) => (
           <Link
             key={id}
             href={`/admin?tab=${id}`}
@@ -131,7 +131,7 @@ export default async function AdminPage({
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white"
             }`}
           >
-            <span>{emoji}</span>
+            <Icon className="w-4 h-4" />
             {label}
             {badge && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">

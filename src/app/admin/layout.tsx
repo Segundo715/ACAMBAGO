@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Store, Users, Globe } from "lucide-react";
 import AdminNav from "./AdminNav";
 
 export const metadata = { title: "Admin — Acom-Di" };
@@ -46,14 +46,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Mobile bottom nav */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-white/10 flex z-40 bg-white/95 dark:bg-[#040a14]/95 backdrop-blur-md">
           {[
-            { href: "/admin?tab=resumen",  label: "Resumen",  emoji: "📊" },
-            { href: "/admin?tab=negocios", label: "Negocios", emoji: "🏪" },
-            { href: "/admin?tab=usuarios", label: "Usuarios", emoji: "👥" },
-            { href: "/",                   label: "Ver sitio", emoji: "🌐" },
-          ].map(({ href, label, emoji }) => (
+            { href: "/admin?tab=resumen",  label: "Resumen",   icon: LayoutDashboard },
+            { href: "/admin?tab=negocios", label: "Negocios",  icon: Store },
+            { href: "/admin?tab=usuarios", label: "Usuarios",  icon: Users },
+            { href: "/",                   label: "Ver sitio", icon: Globe },
+          ].map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}
               className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors">
-              <span className="text-lg leading-none">{emoji}</span>
+              <Icon className="w-[18px] h-[18px]" />
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           ))}

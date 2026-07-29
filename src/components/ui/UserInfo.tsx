@@ -78,15 +78,21 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
   if (!name) return null;
 
   const hasMultiple = businesses.length > 1;
+  const isTopbar = variant === "topbar";
+  // En la barra superior movil no hay espacio para mostrar "Mi cuenta"/
+  // "Compartir mi tienda" siempre en linea (eso era lo que desbordaba el
+  // header ~250px mas alla del viewport). Ahi se mueven a un menu que solo
+  // aparece al tocar, igual que ya pasaba con el selector de tiendas.
+  const canOpen = isTopbar || hasMultiple;
 
   const canPreviewStore = role === "business" && !!activeBusiness?.id;
 
   return (
     <div
       ref={containerRef}
-      className={`relative px-3 py-3 ${variant === "sidebar" ? "border-b border-slate-200 dark:border-white/10" : ""}`}
+      className={`relative px-3 py-3 min-w-0 ${variant === "sidebar" ? "border-b border-slate-200 dark:border-white/10" : ""}`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         {canPreviewStore ? (
           <Link
             href={`/business/${activeBusiness!.id}`}
@@ -108,8 +114,8 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
 
         <button
           type="button"
-          onClick={() => hasMultiple && setOpen((o) => !o)}
-          className={`min-w-0 flex-1 flex items-center gap-1.5 ${hasMultiple ? "cursor-pointer" : "cursor-default"}`}
+          onClick={() => canOpen && setOpen((o) => !o)}
+          className={`min-w-0 flex-1 flex items-center gap-1.5 ${canOpen ? "cursor-pointer" : "cursor-default"}`}
         >
           <div className="min-w-0 flex-1 text-left">
             <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
@@ -119,19 +125,19 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
               <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{name}</p>
             )}
           </div>
-          {hasMultiple && (
+          {canOpen && (
             <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
           )}
         </button>
       </div>
 
-      {role === "business" && (
+      {!isTopbar && role === "business" && (
         <div className="mt-2">
           <AccountModeSwitcher compact />
         </div>
       )}
 
-      {canPreviewStore && (
+      {!isTopbar && canPreviewStore && (
         <ShareButton
           businessName={activeBusiness!.name}
           url={typeof window !== "undefined" ? `${window.location.origin}/business/${activeBusiness!.id}` : undefined}
@@ -140,9 +146,22 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
         />
       )}
 
-      {open && hasMultiple && (
+      {open && canOpen && (
         <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-white dark:bg-[#0a1628] border border-slate-200 dark:border-white/10 rounded-xl shadow-lg overflow-hidden">
-          {businesses.map((b) => (
+          {isTopbar && role === "business" && (
+            <div className="p-2 space-y-1.5 border-b border-slate-100 dark:border-white/10">
+              <AccountModeSwitcher compact />
+              {canPreviewStore && (
+                <ShareButton
+                  businessName={activeBusiness!.name}
+                  url={typeof window !== "undefined" ? `${window.location.origin}/business/${activeBusiness!.id}` : undefined}
+                  label="Compartir mi tienda"
+                  className="w-full flex items-center justify-center gap-1.5 text-xs px-2 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                />
+              )}
+            </div>
+          )}
+          {hasMultiple && businesses.map((b) => (
             <button
               key={b.id}
               type="button"
@@ -157,7 +176,9 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
           ))}
           <Link
             href="/perfil/crear-tienda"
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors border-t border-slate-100 dark:border-white/10"
+            className={`w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-600 dark:text-brand-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${
+              hasMultiple ? "border-t border-slate-100 dark:border-white/10" : ""
+            }`}
           >
             <Plus className="w-3.5 h-3.5 flex-shrink-0" />
             Agregar otra tienda

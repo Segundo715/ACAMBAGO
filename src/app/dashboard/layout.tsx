@@ -88,10 +88,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 min-w-0 lg:ml-64">
         {/* Mobile top bar */}
         <div className="lg:hidden border-b border-slate-200 dark:border-white/10 px-4 py-3 flex items-center justify-between bg-white/90 dark:bg-[#040a14]/90 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-shrink-0">
             <Link href="/">
               <div className="h-8 bg-white rounded-xl px-2 flex items-center shadow-sm">
                 <Image src="/acomdi.png" alt="Acom-Di" width={60} height={24} className="h-6 w-auto object-contain" />
@@ -101,7 +101,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Vendedor
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 min-w-0 flex-shrink justify-end">
             <NotificationBell href="/dashboard/business/notificaciones" />
             <UserInfo variant="topbar" />
           </div>

@@ -7,6 +7,7 @@ import CouponCard from "@/components/coupons/CouponCard";
 import ReviewSection from "./ReviewSection";
 import ShareButton from "@/components/ui/ShareButton";
 import MessageSellerButton from "@/components/ui/MessageSellerButton";
+import CategoryIcon from "@/components/ui/CategoryIcon";
 import DemoBusinessPage from "@/components/business/DemoBusinessPage";
 import ProductsReel from "@/components/ui/ProductsReel";
 import {
@@ -114,11 +115,11 @@ export default async function BusinessPage({ params }: { params: Promise<{ id: s
           ) : null}
         </div>
         <div className="px-6 pb-6 -mt-10 relative">
-          <div className="w-20 h-20 rounded-2xl bg-white shadow-lg border-2 border-white overflow-hidden flex items-center justify-center text-4xl">
+          <div className="w-20 h-20 rounded-2xl bg-white shadow-lg border-2 border-white overflow-hidden flex items-center justify-center">
             {business.image_url ? (
               <Image src={business.image_url} alt={business.name} width={80} height={80} className="object-cover" />
             ) : (
-              <span>{CATEGORY_EMOJI[business.category] ?? "🏪"}</span>
+              <CategoryIcon category={business.category} className="w-8 h-8 text-brand-500" />
             )}
           </div>
           <div className="mt-3">

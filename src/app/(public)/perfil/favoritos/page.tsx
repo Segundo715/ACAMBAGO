@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, MapPin, Star, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORY_ICONS } from "@/types";
+import CategoryIcon from "@/components/ui/CategoryIcon";
 import { getDemoMode, DEMO_BUYER_FAVORITES } from "@/lib/demo-mode";
 
 interface FavoriteStore {
@@ -14,7 +14,6 @@ interface FavoriteStore {
   name: string;
   category: string;
   rating: number;
-  emoji: string;
 }
 
 interface FavoriteRow {
@@ -47,7 +46,7 @@ export default function FavoritosPage() {
         for (const row of (data ?? []) as unknown as FavoriteRow[]) {
           const b = row.businesses;
           if (!b) continue;
-          stores.push({ id: b.id, name: b.name, category: b.category, rating: Number(b.rating_avg) || 0, emoji: CATEGORY_ICONS[b.category] ?? "🏪" });
+          stores.push({ id: b.id, name: b.name, category: b.category, rating: Number(b.rating_avg) || 0 });
         }
         setFavoriteStores(stores);
         setLoading(false);
@@ -78,8 +77,8 @@ export default function FavoritosPage() {
         <div className="card overflow-hidden divide-y divide-slate-100 dark:divide-white/10">
           {list.map((s) => (
             <Link key={s.id} href={`/business/${s.id}`} className="px-5 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                {s.emoji}
+              <div className="w-10 h-10 bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <CategoryIcon category={s.category} className="w-5 h-5 text-brand-600 dark:text-brand-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 dark:text-white">{s.name}</p>

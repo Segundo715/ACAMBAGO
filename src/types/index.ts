@@ -1,3 +1,10 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Shirt, Footprints, Pill, Wrench, Notebook, Smartphone, Gem,
+  ShoppingBag, Sofa, ShoppingCart, SprayCan, PawPrint, Palette,
+  Dumbbell, ToyBrick, BookOpen, Store,
+} from "lucide-react";
+
 export type UserRole = "client" | "business" | "admin";
 export type DiscountType = "percent" | "fixed";
 
@@ -229,22 +236,26 @@ export const BUSINESS_CATEGORIES = [
   "Otro",
 ] as const;
 
-export const CATEGORY_ICONS: Record<string, string> = {
-  "Tienda de ropa": "👗",
-  "Zapatería": "👟",
-  "Farmacia": "💊",
-  "Ferretería": "🔧",
-  "Papelería": "📓",
-  "Electrónica": "📱",
-  "Joyería": "💍",
-  "Accesorios": "👜",
-  "Mueblería": "🛋️",
-  "Abarrotes": "🛒",
-  "Cosméticos": "💄",
-  "Mascotas": "🐾",
-  "Artesanías": "🏺",
-  "Deportes": "⚽",
-  "Juguetería": "🧸",
-  "Librería": "📚",
-  "Otro": "🏪",
+// Íconos planos (lucide-react) por categoría de negocio. Antes eran emoji
+// nativos del sistema operativo, que se ven con sombreado 3D/glossy según
+// el dispositivo (notorio en Android/Samsung); esto los deja consistentes
+// en cualquier pantalla. Úsalos con el componente <CategoryIcon />.
+export const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "Tienda de ropa": Shirt,
+  "Zapatería": Footprints,
+  "Farmacia": Pill,
+  "Ferretería": Wrench,
+  "Papelería": Notebook,
+  "Electrónica": Smartphone,
+  "Joyería": Gem,
+  "Accesorios": ShoppingBag,
+  "Mueblería": Sofa,
+  "Abarrotes": ShoppingCart,
+  "Cosméticos": SprayCan,
+  "Mascotas": PawPrint,
+  "Artesanías": Palette,
+  "Deportes": Dumbbell,
+  "Juguetería": ToyBrick,
+  "Librería": BookOpen,
+  "Otro": Store,
 };

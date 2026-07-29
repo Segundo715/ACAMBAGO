@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon } from "@/types";
 import CouponCard from "@/components/coupons/CouponCard";
-import { Plus, Ticket } from "lucide-react";
+import { Plus, Ticket, Pencil } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { loadOwnedBusinesses } from "@/lib/current-business";
@@ -140,6 +140,12 @@ export default function CouponsPage() {
                       {c.is_active ? "Desactivar" : "Activar"}
                     </button>
                   )}
+                  <Link
+                    href={`/dashboard/business/coupons/${c.id}/edit`}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors flex items-center gap-1"
+                  >
+                    <Pencil className="w-3 h-3" /> Editar
+                  </Link>
                   <button
                     onClick={() => deleteCoupon(c.id)}
                     className="text-xs px-3 py-1.5 rounded-lg font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"

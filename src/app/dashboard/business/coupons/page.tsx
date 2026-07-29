@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon } from "@/types";
 import CouponCard from "@/components/coupons/CouponCard";
-import { Plus, Ticket, Pencil } from "lucide-react";
+import { Plus, Ticket, Pencil, CheckCircle2, Clock, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { loadOwnedBusinesses } from "@/lib/current-business";
+
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 export default function CouponsPage() {
   const { user, isLoaded } = useUser();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponCredits, setCouponCredits] = useState(0);
+  const [redemptionDates, setRedemptionDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [renewDate, setRenewDate] = useState("");
@@ -28,12 +31,54 @@ export default function CouponsPage() {
         return;
       }
       setCouponCredits(biz.coupon_credits ?? 0);
-      const { data } = await supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false });
-      setCoupons((data ?? []) as Coupon[]);
+      const [{ data: couponsData }, { data: redemptionsData }] = await Promise.all([
+        supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false }),
+        supabase.from("coupon_redemptions").select("redeemed_at").eq("business_id", biz.id),
+      ]);
+      setCoupons((couponsData ?? []) as Coupon[]);
+      setRedemptionDates(((redemptionsData ?? []) as { redeemed_at: string }[]).map((r) => r.redeemed_at));
       setLoading(false);
     };
     load();
   }, [isLoaded, user?.id]);
+
+  // Disponibles: activos, vigentes y con cupo. Pendientes: de esos, los que
+  // nadie ha usado todavía. Utilizados: total de canjes de todos los tiempos
+  // (independiente de si el cupón sigue activo o ya se agotó/desactivó).
+  const stats = useMemo(() => {
+    const now = new Date();
+    let available = 0;
+    let pending = 0;
+    let used = 0;
+    for (const c of coupons) {
+      used += c.used_count;
+      const notExpired = !c.expires_at || new Date(c.expires_at) >= now;
+      const hasQuota = c.limit_count == null || c.used_count < c.limit_count;
+      if (c.is_active && notExpired && hasQuota) {
+        available++;
+        if (c.used_count === 0) pending++;
+      }
+    }
+    return { available, pending, used };
+  }, [coupons]);
+
+  // Canjes de los últimos 7 días, agrupados por día, para la mini gráfica.
+  const weekChart = useMemo(() => {
+    const days: { label: string; value: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+      const count = redemptionDates.filter((r) => {
+        const t = new Date(r).getTime();
+        return t >= dayStart && t < dayEnd;
+      }).length;
+      days.push({ label: DAY_LABELS[d.getDay()], value: count });
+    }
+    return days;
+  }, [redemptionDates]);
+  const weekMax = Math.max(1, ...weekChart.map((d) => d.value));
 
   const toggleActive = async (coupon: Coupon) => {
     const { error } = await supabase.from("coupons").update({ is_active: !coupon.is_active }).eq("id", coupon.id);
@@ -82,6 +127,43 @@ export default function CouponsPage() {
           <Plus className="w-4 h-4" /> Crear cupón
         </Link>
       </div>
+
+      {!loading && coupons.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 lg:col-span-2">
+            {[
+              { label: "Disponibles", value: stats.available, icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10" },
+              { label: "Utilizados", value: stats.used, icon: Ticket, color: "text-brand-600 dark:text-brand-400", bg: "bg-brand-50 dark:bg-brand-500/10" },
+              { label: "Pendientes", value: stats.pending, icon: PauseCircle, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+            ].map(({ label, value, icon: Icon, color, bg }) => (
+              <div key={label} className="card p-4">
+                <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-2`}>
+                  <Icon className={`w-4 h-4 ${color}`} />
+                </div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 flex items-center gap-1.5 mb-2">
+              <Clock className="w-3.5 h-3.5" /> Canjes — últimos 7 días
+            </p>
+            <div className="flex items-end gap-1.5 h-16">
+              {weekChart.map(({ label, value }, i) => (
+                <div key={`${label}-${i}`} className="flex-1 flex flex-col items-center gap-1">
+                  <div
+                    className="w-full bg-brand-500 dark:bg-brand-400 rounded-t"
+                    style={{ height: `${Math.max(4, (value / weekMax) * 100)}%` }}
+                    title={`${value} canjes`}
+                  />
+                  <span className="text-[9px] text-gray-400 dark:text-slate-500">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-4">

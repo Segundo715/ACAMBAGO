@@ -113,6 +113,47 @@ export interface CouponRedemption {
   redeemed_at: string;
 }
 
+// Resultado posible de cada intento de escaneo (ver supabase/coupon-scan-audit.sql).
+// "redeemed" cubre tanto un escaneo válido (fase "scan", nada se marca todavía)
+// como un canje ya confirmado (fase "confirm", el cupón queda usado).
+export type CouponScanOutcome =
+  | "redeemed"
+  | "duplicate"
+  | "invalid_code"
+  | "inactive"
+  | "expired"
+  | "limit_reached"
+  | "wrong_business";
+
+// Auditoría de CADA intento de escaneo, exitoso o no — a diferencia de
+// `CouponRedemption`, que solo existe para los canjes que sí se concretaron.
+export interface CouponScanLog {
+  id: string;
+  business_id?: string;
+  coupon_id?: string;
+  scanned_code: string;
+  scanned_by: string;
+  customer_user_id?: string;
+  phase: "scan" | "confirm";
+  outcome: CouponScanOutcome;
+  detail?: string;
+  created_at: string;
+}
+
+// Respuesta del RPC `redeem_coupon` (ver supabase/coupon-scan-audit.sql),
+// tal como la usa /api/coupons/validate.
+export interface RedeemCouponResult {
+  outcome: CouponScanOutcome;
+  message: string;
+  coupon_id: string | null;
+  coupon_title: string | null;
+  discount_type: DiscountType | null;
+  discount_value: number | null;
+  out_coupon_code: string | null;
+  business_name: string | null;
+  redemption_id: string | null;
+}
+
 export interface ProductQuestion {
   id: string;
   product_id: string;

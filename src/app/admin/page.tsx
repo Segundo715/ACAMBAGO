@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 import { Business, CATEGORY_ICONS } from "@/types";
 import AdminApproveButton from "./AdminApproveButton";
 import AdminBusinessActions from "./AdminBusinessActions";
+import AssignCouponsButton from "./AssignCouponsButton";
 import {
   CheckCircle, Store, Users, Package, Clock, TrendingUp,
-  AlertCircle, ShieldCheck, Star, MapPin, Crown, User,
+  AlertCircle, ShieldCheck, Star, MapPin, Crown, User, Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import { DEMO_BUSINESSES, DEMO_PRODUCTS } from "@/lib/demo-data";
@@ -261,6 +262,9 @@ export default async function AdminPage({
                             }`}>
                               {b.is_active ? "Activo" : "Suspendido"}
                             </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full border bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/20 flex items-center gap-1">
+                              <Ticket className="w-3 h-3" /> Cupones disponibles: {b.coupon_credits ?? 0}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -268,11 +272,15 @@ export default async function AdminPage({
                         <MapPin className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">{b.address}</span>
                       </p>
-                      <div className="mt-3">
-                        {!isDemo
-                          ? <AdminBusinessActions businessId={b.id} isApproved={true} isActive={b.is_active} />
-                          : <span className="text-xs text-slate-400 italic">Demo — sin acción</span>
-                        }
+                      <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        {!isDemo ? (
+                          <>
+                            <AdminBusinessActions businessId={b.id} isApproved={true} isActive={b.is_active} />
+                            <AssignCouponsButton businessId={b.id} businessName={b.name} />
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Demo — sin acción</span>
+                        )}
                       </div>
                     </div>
                   </div>

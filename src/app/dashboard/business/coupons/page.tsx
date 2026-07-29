@@ -13,6 +13,7 @@ import { loadOwnedBusinesses } from "@/lib/current-business";
 export default function CouponsPage() {
   const { user, isLoaded } = useUser();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCredits, setCouponCredits] = useState(0);
   const [loading, setLoading] = useState(true);
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [renewDate, setRenewDate] = useState("");
@@ -26,6 +27,7 @@ export default function CouponsPage() {
         window.location.href = "/perfil/crear-tienda";
         return;
       }
+      setCouponCredits(biz.coupon_credits ?? 0);
       const { data } = await supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false });
       setCoupons((data ?? []) as Coupon[]);
       setLoading(false);
@@ -69,7 +71,12 @@ export default function CouponsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cupones</h1>
-          <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5">{coupons.length} cupones creados</p>
+          <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5 flex items-center gap-2 flex-wrap">
+            <span>{coupons.length} cupones creados</span>
+            <span className="inline-flex items-center gap-1 text-xs font-medium bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 px-2 py-0.5 rounded-full">
+              {couponCredits} disponibles para crear
+            </span>
+          </p>
         </div>
         <Link href="/dashboard/business/coupons/new" className="btn-primary flex items-center gap-2 text-sm">
           <Plus className="w-4 h-4" /> Crear cupón

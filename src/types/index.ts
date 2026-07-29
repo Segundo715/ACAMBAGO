@@ -48,6 +48,7 @@ export interface Business {
   pickup_enabled?: boolean;
   meeting_enabled?: boolean;
   home_enabled?: boolean;
+  coupon_credits?: number;
   rating_avg: number;
   rating_count: number;
   is_approved: boolean;
@@ -83,6 +84,17 @@ export interface Coupon {
   used_count: number;
   expires_at?: string;
   is_active: boolean;
+  created_at: string;
+}
+
+// Historial de asignaciones de cupones disponibles hechas por un admin a un
+// negocio (ver supabase/coupon-credits.sql). No confundir con `Coupon`: esto
+// es el "saldo" que le permite al vendedor crear cupones nuevos, no un cupón.
+export interface CouponCreditGrant {
+  id: string;
+  business_id: string;
+  admin_user_id: string;
+  amount: number;
   created_at: string;
 }
 

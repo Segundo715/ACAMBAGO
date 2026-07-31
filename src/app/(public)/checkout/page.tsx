@@ -81,7 +81,7 @@ function CheckoutProgress({ step }: { step: Step }) {
   if (step === 5) return null;
   return (
     <div className="px-4 py-4 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#060e18]">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto">
         <div className="flex items-center justify-between">
           {STEPS.map((s, i) => {
             const done = step > s.n;
@@ -1161,7 +1161,7 @@ export default function CheckoutPage() {
       {/* Sticky header */}
       {step < 5 && (
         <div className="sticky top-0 z-20 bg-white dark:bg-[#060e18] border-b border-slate-200 dark:border-white/10">
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
             <button
               onClick={() => (step === 1 ? router.back() : setStep((s) => (s - 1) as Step))}
               className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
@@ -1180,7 +1180,7 @@ export default function CheckoutPage() {
       {/* Sticky total bar */}
       {step < 4 && items.length > 0 && (
         <div className="sticky top-[calc(var(--header-h,80px))] z-10 bg-brand-600/95 backdrop-blur-md">
-          <div className="max-w-lg mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-2 flex items-center justify-between">
             <span className="text-white/80 text-xs">
               {items.reduce((s, i) => s + i.quantity, 0)} artículos
             </span>
@@ -1190,7 +1190,7 @@ export default function CheckoutPage() {
       )}
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-5">
+      <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-5">
         {step === 1 && (
           <Step1 note={note} setNote={setNote} contactPhone={contactPhone} setContactPhone={setContactPhone} onNext={next} shippingMethod={delivery} />
         )}

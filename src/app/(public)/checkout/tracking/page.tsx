@@ -150,7 +150,7 @@ function TrackingContent() {
 
   if (isReal && loadingReal) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#030810] max-w-lg mx-auto px-4 py-8 animate-pulse space-y-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#030810] max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-8 animate-pulse space-y-4">
         <div className="h-16 bg-slate-100 dark:bg-white/5 rounded-2xl" />
         <div className="h-24 bg-slate-100 dark:bg-white/5 rounded-2xl" />
         <div className="h-64 bg-slate-100 dark:bg-white/5 rounded-2xl" />
@@ -162,7 +162,7 @@ function TrackingContent() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#030810]">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white dark:bg-[#060e18] border-b border-slate-200 dark:border-white/10">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => router.push("/")}
             className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
@@ -182,7 +182,7 @@ function TrackingContent() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto px-4 py-5 space-y-4">
         {/* Store card */}
         <div className="bg-white dark:bg-[#0a1628] rounded-2xl border border-slate-200 dark:border-white/10 p-4 flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-2xl flex-shrink-0">

@@ -4,18 +4,18 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import DesktopSidebar from "./DesktopSidebar";
 
-const STORAGE_KEY = "sidebar_hidden";
+const STORAGE_KEY = "sidebar_collapsed";
 
 export default function DesktopShell({ children }: { children: React.ReactNode }) {
-  const [hidden, setHidden] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    queueMicrotask(() => setHidden(localStorage.getItem(STORAGE_KEY) === "1"));
+    queueMicrotask(() => setCollapsed(localStorage.getItem(STORAGE_KEY) === "1"));
   }, []);
 
   const toggle = () => {
-    setHidden((h) => {
-      const next = !h;
+    setCollapsed((c) => {
+      const next = !c;
       localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
       return next;
     });
@@ -23,25 +23,25 @@ export default function DesktopShell({ children }: { children: React.ReactNode }
 
   return (
     <>
-      <DesktopSidebar hidden={hidden} />
+      <DesktopSidebar collapsed={collapsed} />
 
-      {/* Flecha para ocultar/mostrar el sidebar, solo en escritorio */}
+      {/* Flecha para colapsar/expandir el sidebar a solo iconos, solo en escritorio */}
       <button
         onClick={toggle}
-        aria-label={hidden ? "Mostrar menú" : "Ocultar menú"}
-        title={hidden ? "Mostrar menú" : "Ocultar menú"}
+        aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+        title={collapsed ? "Expandir menú" : "Colapsar menú"}
         className={`hidden md:flex fixed top-1/2 -translate-y-1/2 z-[60] w-6 h-14 items-center justify-center rounded-r-lg bg-white dark:bg-[#0a1628] border border-l-0 border-slate-200 dark:border-white/10 shadow-md hover:bg-slate-50 dark:hover:bg-white/10 transition-all duration-200 ${
-          hidden ? "left-0" : "left-64"
+          collapsed ? "left-20" : "left-64"
         }`}
       >
-        {hidden ? (
+        {collapsed ? (
           <ChevronRight className="w-3.5 h-3.5 text-slate-500 dark:text-gray-400" />
         ) : (
           <ChevronLeft className="w-3.5 h-3.5 text-slate-500 dark:text-gray-400" />
         )}
       </button>
 
-      <div className={`flex flex-col min-h-screen transition-[margin] duration-200 ${hidden ? "md:ml-0" : "md:ml-64"}`}>
+      <div className={`flex flex-col min-h-screen transition-[margin] duration-200 ${collapsed ? "md:ml-20" : "md:ml-64"}`}>
         {children}
       </div>
     </>

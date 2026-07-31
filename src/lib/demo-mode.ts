@@ -85,6 +85,36 @@ export const DEMO_BUYER_FAVORITES = [
   },
 ];
 
+export const DEMO_BUYER_PRODUCT_FAVORITES = [
+  {
+    id: "p1",
+    name: "Taladro Percutor 1/2\"",
+    price: 890,
+    image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&q=80",
+    business_id: "demo-ferreteria",
+    business_name: "Ferretería Acámbaro",
+    business_category: "Ferretería",
+  },
+  {
+    id: "r1",
+    name: "Playera Básica Algodón",
+    price: 189,
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80",
+    business_id: "demo-ropa",
+    business_name: "Boutique Élite",
+    business_category: "Tienda de ropa",
+  },
+  {
+    id: "z1",
+    name: "Tenis Running Unisex",
+    price: 680,
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80",
+    business_id: "demo-zapateria",
+    business_name: "Zapatería Piso Firme",
+    business_category: "Zapatería",
+  },
+];
+
 export const DEMO_BUYER_COUPONS = [
   {
     id: "rc-1",

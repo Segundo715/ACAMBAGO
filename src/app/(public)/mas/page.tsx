@@ -84,7 +84,7 @@ export default function MasPage() {
             { icon: Package, label: "Mis pedidos", href: "/perfil/pedidos" },
             { icon: MapPin, label: "Mis direcciones", href: "/perfil/direcciones" },
             { icon: Clock, label: "Vistos recientemente", href: "/vistos-recientemente" },
-            { icon: Heart, label: "Tiendas favoritas", href: "/perfil/favoritos" },
+            { icon: Heart, label: "Favoritos", href: "/perfil/favoritos" },
             { icon: MessageSquare, label: "Mis preguntas", href: "/perfil/preguntas" },
             { icon: Bell, label: "Notificaciones", href: "/perfil/notificaciones" },
             { icon: Ticket, label: "Cupones canjeados", href: "/perfil" },

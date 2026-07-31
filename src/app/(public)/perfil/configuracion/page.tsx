@@ -89,7 +89,7 @@ export default function ConfiguracionPage() {
       if (uploadErr) throw new Error(uploadErr.message);
 
       const { data: { publicUrl } } = supabase.storage.from("profile-images").getPublicUrl(path);
-      const { error: dbErr } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client", avatar_url: publicUrl });
+      const { error: dbErr } = await supabase.from("profiles").upsert({ id: user.id, name, phone, avatar_url: publicUrl });
       if (dbErr) throw new Error(dbErr.message);
 
       setAvatarUrl(publicUrl);
@@ -102,7 +102,7 @@ export default function ConfiguracionPage() {
 
   const savePhoneToProfile = async () => {
     if (!user) return;
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, name, phone, role: "client" });
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, name, phone });
     if (!error) {
       toast.success("Perfil actualizado");
       setOriginalPhone(phone);

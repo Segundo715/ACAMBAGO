@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ChevronLeft, ChevronRight, Ticket, ShieldCheck, MapPin, LayoutGrid,
+  ChevronLeft, ChevronRight, Ticket, MapPin, LayoutGrid,
   Package, Store, Clock, Coins, TrendingUp, Truck, Lock,
 } from "lucide-react";
 import { getRecentlyViewed, RecentlyViewedItem } from "@/lib/recently-viewed";
@@ -12,7 +12,6 @@ import { formatPrice } from "@/lib/utils";
 
 const ITEMS = [
   { key: "cupones", icon: Ticket, title: "Cupones con QR", desc: "Descuentos exclusivos en tiendas locales", cta: "Ver cupones", href: "/coupons" },
-  { key: "verificados", icon: ShieldCheck, title: "Negocios verificados", desc: "Todos pasan revisión antes de publicarse", cta: "Ver tiendas", href: "#tiendas" },
   { key: "mapa", icon: MapPin, title: "Mapa interactivo", desc: "Encuentra negocios cerca de ti", cta: "Ver mapa", href: "/map" },
   { key: "categorias", icon: LayoutGrid, title: "Categorías", desc: "Explora por tipo de negocio", cta: "Ver categorías", href: "/categorias" },
   { key: "destacados", icon: Package, title: "Productos Destacados", desc: "Selección variada de las tiendas locales", cta: "Ver productos", href: "#productos" },

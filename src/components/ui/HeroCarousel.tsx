@@ -51,7 +51,7 @@ const SLIDES: Slide[] = [
     eyebrowIcon: MapPin,
     title: "Encuéntralos",
     highlight: "en el mapa",
-    desc: "Ubica tiendas locales verificadas directo en un mapa interactivo de Acámbaro.",
+    desc: "Ubica tiendas locales directo en un mapa interactivo de Acámbaro.",
     gradient: "from-sky-950/95 via-[#050e18]/90 to-brand-900/85",
     primaryCta: { label: "Ver mapa", href: "/map", icon: MapPin },
   },

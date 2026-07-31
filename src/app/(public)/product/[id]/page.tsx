@@ -8,7 +8,6 @@ import {
 } from "@/lib/demo-data";
 import { formatPrice } from "@/lib/utils";
 import {
-  ShieldCheck,
   Star,
   MessageCircle,
   ChevronRight,
@@ -255,11 +254,7 @@ export default async function ProductPage({
           </div>
 
           {/* Garantías */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
-              <ShieldCheck className="w-4 h-4 text-brand-600 dark:text-brand-400 flex-shrink-0" />
-              <p className="text-xs text-slate-600 dark:text-gray-400">Negocio verificado</p>
-            </div>
+          <div className="grid grid-cols-1 gap-3 pt-1">
             <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-white/5">
               <Package className="w-4 h-4 text-brand-600 dark:text-brand-400 flex-shrink-0" />
               <p className="text-xs text-slate-600 dark:text-gray-400">Producto en tienda</p>

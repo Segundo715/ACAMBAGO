@@ -14,7 +14,7 @@ import {
 
 const ALL_DEMO_BUSINESSES = [...DEMO_BUSINESSES, ...DEMO_BUSINESSES_EXTRA];
 import Link from "next/link";
-import { MapPin, Ticket, ShieldCheck, Star, ArrowRight, Truck, Store } from "lucide-react";
+import { MapPin, Ticket, Star, ArrowRight, Truck, Store } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
@@ -272,7 +272,6 @@ export default async function HomePage({
               {[
                 { icon: <Store className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Locales", desc: "Apoya directamente a los emprendedores de Acámbaro, Guanajuato." },
                 { icon: <Ticket className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Cupones con QR", desc: "Descuentos exclusivos canjeables en tienda con tu celular." },
-                { icon: <ShieldCheck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Negocios Verificados", desc: "Todos los negocios pasan verificación antes de publicarse." },
                 { icon: <Truck className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Entrega en la Ciudad", desc: "Muchos negocios ofrecen entrega a domicilio en Acámbaro." },
                 { icon: <MapPin className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Mapa Interactivo", desc: "Encuentra negocios cerca de ti con nuestro mapa integrado." },
                 { icon: <Star className="w-6 h-6 text-brand-600 dark:text-brand-400" />, title: "Reseñas Reales", desc: "Lee opiniones de otros clientes antes de hacer tu compra." },

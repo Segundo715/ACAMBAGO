@@ -137,18 +137,27 @@ export default async function HomePage({
 
   const totalCount = businesses.length;
   const isFiltered = !!(params.category || params.q);
+  // Al filtrar solo por categoría (sin búsqueda de texto) no hace falta el
+  // hero ni los accesos rápidos: así el resultado aparece arriba de inmediato
+  // en vez de que el usuario tenga que bajar para verlo. Si hay búsqueda de
+  // texto se conservan, porque ahí vive la barra de búsqueda para editarla.
+  const hideHero = isFiltered && !query;
 
   return (
     <>
-      {/* ── Hero: carrusel estilo Mercado Libre ── */}
-      <HeroCarousel defaultSearch={params.q} totalCount={totalCount} />
+      {!hideHero && (
+        <>
+          {/* ── Hero: carrusel estilo Mercado Libre ── */}
+          <HeroCarousel defaultSearch={params.q} totalCount={totalCount} />
 
-      {/* ── Accesos rápidos, estilo Mercado Libre ── */}
-      <section className="bg-white dark:bg-[#050e18] py-8 md:py-10 border-b border-slate-100 dark:border-white/5">
-        <div className="max-w-7xl mx-auto px-4">
-          <QuickAccessRow />
-        </div>
-      </section>
+          {/* ── Accesos rápidos, estilo Mercado Libre ── */}
+          <section className="bg-white dark:bg-[#050e18] py-8 md:py-10 border-b border-slate-100 dark:border-white/5">
+            <div className="max-w-7xl mx-auto px-4">
+              <QuickAccessRow />
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Filtros — solo vista filtrada */}
       {isFiltered && (

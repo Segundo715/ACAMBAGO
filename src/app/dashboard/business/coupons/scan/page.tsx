@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { ScanLine, CheckCircle, XCircle, Camera, User, Calendar, Hash } from "lucide-react";
+import { ScanLine, CheckCircle, XCircle, Camera, User, Calendar, Hash, Receipt } from "lucide-react";
 import toast from "react-hot-toast";
 import { playNotificationSound } from "@/lib/notification-sound";
+import { formatPrice } from "@/lib/utils";
 
 const QRScanner = dynamic(() => import("@/components/coupons/QRScanner"), { ssr: false });
 
@@ -30,6 +31,21 @@ interface ScanResult {
   customerName?: string | null;
   redemptionId?: string | null;
   confirmedAt?: string;
+  saleAmount?: number | null;
+  discountAmount?: number | null;
+  finalAmount?: number | null;
+}
+
+// Calcula el mismo desglose que el servidor, solo para mostrar una vista
+// previa instantánea mientras el vendedor escribe el monto — el cálculo
+// que de verdad se guarda lo hace el RPC en el servidor al confirmar,
+// no este.
+function previewDiscount(coupon: CouponInfo, saleAmount: number) {
+  const discount =
+    coupon.discount_type === "percent"
+      ? Math.round(saleAmount * (coupon.value / 100) * 100) / 100
+      : Math.min(coupon.value, saleAmount);
+  return { discount, final: saleAmount - discount };
 }
 
 // Estados del flujo: idle -> scanning -> previewing -> pending (confirmar) -> confirming -> result
@@ -39,6 +55,7 @@ export default function ScanPage() {
   const [step, setStep] = useState<Step>("idle");
   const [pending, setPending] = useState<PendingRedemption | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [saleAmount, setSaleAmount] = useState("");
 
   // Paso 1: leer el QR y solo VALIDAR (confirm: false) — no marca nada como
   // usado todavía. Si es válido, se muestra la info del cliente/cupón y se
@@ -85,12 +102,18 @@ export default function ScanPage() {
   const handleConfirm = async () => {
     if (!pending) return;
     setStep("confirming");
+    const parsedSaleAmount = parseFloat(saleAmount);
 
     try {
       const response = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_data: pending.qrData, user_id: pending.customerUserId, confirm: true }),
+        body: JSON.stringify({
+          qr_data: pending.qrData,
+          user_id: pending.customerUserId,
+          confirm: true,
+          sale_amount: parsedSaleAmount > 0 ? parsedSaleAmount : undefined,
+        }),
       });
       const data = await response.json();
 
@@ -102,6 +125,9 @@ export default function ScanPage() {
           customerName: data.customer_name ?? pending.customerName,
           redemptionId: data.redemption_id,
           confirmedAt: new Date().toISOString(),
+          saleAmount: data.sale_amount,
+          discountAmount: data.discount_amount,
+          finalAmount: data.final_amount,
         });
         playNotificationSound();
       } else {
@@ -119,12 +145,14 @@ export default function ScanPage() {
 
   const cancelPending = () => {
     setPending(null);
+    setSaleAmount("");
     setStep("idle");
   };
 
   const reset = () => {
     setResult(null);
     setPending(null);
+    setSaleAmount("");
     setStep("idle");
   };
 
@@ -191,6 +219,37 @@ export default function ScanPage() {
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">{pending.coupon.code}</p>
               </div>
+            </div>
+
+            <div className="w-full text-left">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5" /> Total de la venta (opcional)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={saleAmount}
+                onChange={(e) => setSaleAmount(e.target.value)}
+                placeholder="Ej: 500"
+                className="input"
+              />
+              {parseFloat(saleAmount) > 0 && (() => {
+                const { discount, final } = previewDiscount(pending.coupon, parseFloat(saleAmount));
+                return (
+                  <div className="mt-2 bg-gray-50 dark:bg-white/5 rounded-xl p-3 text-sm space-y-1">
+                    <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                      <span>Descuento</span>
+                      <span>-{formatPrice(discount)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-gray-900 dark:text-white pt-1 border-t border-gray-200 dark:border-white/10">
+                      <span>Total a cobrar</span>
+                      <span>{formatPrice(final)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="w-full flex gap-2 mt-2">
@@ -261,6 +320,23 @@ export default function ScanPage() {
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">{result.coupon.code}</p>
                 </div>
+
+                {result.saleAmount != null && (
+                  <div className="pt-2 border-t border-gray-100 dark:border-white/10 space-y-1">
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>Total de la venta</span>
+                      <span>{formatPrice(result.saleAmount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>Descuento aplicado</span>
+                      <span>-{formatPrice(result.discountAmount ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-gray-900 dark:text-white text-base pt-1">
+                      <span>Total a cobrar</span>
+                      <span className="text-green-600 dark:text-green-400">{formatPrice(result.finalAmount ?? 0)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

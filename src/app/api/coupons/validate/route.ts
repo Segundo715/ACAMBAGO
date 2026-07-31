@@ -42,6 +42,10 @@ export async function POST(request: Request) {
     const { coupon_code, business_id } = payload ?? {};
     const customerUserId: string | null = body.user_id || null;
     const confirm: boolean = body.confirm === true;
+    // Monto de la venta (opcional): si el vendedor lo captura, el RPC calcula
+    // el descuento y el total a cobrar del lado del servidor, no del cliente.
+    const saleAmount: number | null =
+      typeof body.sale_amount === "number" && body.sale_amount > 0 ? body.sale_amount : null;
 
     if (!coupon_code || typeof coupon_code !== "string" || !business_id || !UUID_RE.test(business_id)) {
       return NextResponse.json({ error: "Cupón inválido", outcome: "invalid_code" }, { status: 400 });
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
       p_scanning_owner_id: userId,
       p_customer_user_id: customerUserId,
       p_confirm: confirm,
+      p_sale_amount: saleAmount,
     });
 
     if (error) {
@@ -96,6 +101,9 @@ export async function POST(request: Request) {
       business_name: result.business_name,
       customer_name: customerName,
       redemption_id: result.redemption_id,
+      sale_amount: result.sale_amount,
+      discount_amount: result.discount_amount,
+      final_amount: result.final_amount,
     });
   } catch (err) {
     console.error("Error en /api/coupons/validate:", err);

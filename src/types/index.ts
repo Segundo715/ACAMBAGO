@@ -111,6 +111,8 @@ export interface CouponRedemption {
   user_id?: string;
   business_id: string;
   redeemed_at: string;
+  sale_amount?: number;
+  discount_amount?: number;
 }
 
 // Resultado posible de cada intento de escaneo (ver supabase/coupon-scan-audit.sql).
@@ -152,6 +154,9 @@ export interface RedeemCouponResult {
   out_coupon_code: string | null;
   business_name: string | null;
   redemption_id: string | null;
+  sale_amount: number | null;
+  discount_amount: number | null;
+  final_amount: number | null;
 }
 
 export interface ProductQuestion {

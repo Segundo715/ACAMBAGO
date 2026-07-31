@@ -5,18 +5,24 @@ import { useUser } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { Coupon } from "@/types";
 import CouponCard from "@/components/coupons/CouponCard";
-import { Plus, Ticket, Pencil, CheckCircle2, Clock, PauseCircle } from "lucide-react";
+import { Plus, Ticket, Pencil, CheckCircle2, Clock, PauseCircle, Banknote } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { loadOwnedBusinesses } from "@/lib/current-business";
+import { formatPrice } from "@/lib/utils";
 
 const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+interface RedemptionRow {
+  redeemed_at: string;
+  discount_amount: number | null;
+}
 
 export default function CouponsPage() {
   const { user, isLoaded } = useUser();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [couponCredits, setCouponCredits] = useState(0);
-  const [redemptionDates, setRedemptionDates] = useState<string[]>([]);
+  const [redemptions, setRedemptions] = useState<RedemptionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [renewDate, setRenewDate] = useState("");
@@ -33,14 +39,19 @@ export default function CouponsPage() {
       setCouponCredits(biz.coupon_credits ?? 0);
       const [{ data: couponsData }, { data: redemptionsData }] = await Promise.all([
         supabase.from("coupons").select("*").eq("business_id", biz.id).order("created_at", { ascending: false }),
-        supabase.from("coupon_redemptions").select("redeemed_at").eq("business_id", biz.id),
+        supabase.from("coupon_redemptions").select("redeemed_at, discount_amount").eq("business_id", biz.id),
       ]);
       setCoupons((couponsData ?? []) as Coupon[]);
-      setRedemptionDates(((redemptionsData ?? []) as { redeemed_at: string }[]).map((r) => r.redeemed_at));
+      setRedemptions((redemptionsData ?? []) as RedemptionRow[]);
       setLoading(false);
     };
     load();
   }, [isLoaded, user?.id]);
+
+  const totalDiscounted = useMemo(
+    () => redemptions.reduce((sum, r) => sum + (r.discount_amount ?? 0), 0),
+    [redemptions]
+  );
 
   // Disponibles: activos, vigentes y con cupo. Pendientes: de esos, los que
   // nadie ha usado todavía. Utilizados: total de canjes de todos los tiempos
@@ -70,14 +81,14 @@ export default function CouponsPage() {
       d.setDate(d.getDate() - i);
       const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
       const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-      const count = redemptionDates.filter((r) => {
-        const t = new Date(r).getTime();
+      const count = redemptions.filter((r) => {
+        const t = new Date(r.redeemed_at).getTime();
         return t >= dayStart && t < dayEnd;
       }).length;
       days.push({ label: DAY_LABELS[d.getDay()], value: count });
     }
     return days;
-  }, [redemptionDates]);
+  }, [redemptions]);
   const weekMax = Math.max(1, ...weekChart.map((d) => d.value));
 
   const toggleActive = async (coupon: Coupon) => {
@@ -130,11 +141,12 @@ export default function CouponsPage() {
 
       {!loading && coupons.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="grid grid-cols-3 gap-3 lg:col-span-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:col-span-2">
             {[
-              { label: "Disponibles", value: stats.available, icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10" },
-              { label: "Utilizados", value: stats.used, icon: Ticket, color: "text-brand-600 dark:text-brand-400", bg: "bg-brand-50 dark:bg-brand-500/10" },
-              { label: "Pendientes", value: stats.pending, icon: PauseCircle, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+              { label: "Disponibles", value: String(stats.available), icon: CheckCircle2, color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-500/10" },
+              { label: "Utilizados", value: String(stats.used), icon: Ticket, color: "text-brand-600 dark:text-brand-400", bg: "bg-brand-50 dark:bg-brand-500/10" },
+              { label: "Pendientes", value: String(stats.pending), icon: PauseCircle, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+              { label: "Total descontado", value: formatPrice(totalDiscounted), icon: Banknote, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-500/10" },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} className="card p-4">
                 <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-2`}>

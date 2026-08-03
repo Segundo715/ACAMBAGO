@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { revertRoleIfNoBusinesses } from "@/lib/revert-owner-role";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-export default function AdminApproveButton({ businessId }: { businessId: string }) {
+export default function AdminApproveButton({ businessId, ownerId }: { businessId: string; ownerId: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -27,6 +28,7 @@ export default function AdminApproveButton({ businessId }: { businessId: string 
     if (!confirm("¿Rechazar y eliminar este negocio?")) return;
     setLoading(true);
     await supabase.from("businesses").delete().eq("id", businessId);
+    await revertRoleIfNoBusinesses(supabase, ownerId);
     toast.success("Negocio rechazado");
     router.refresh();
     setLoading(false);

@@ -181,7 +181,7 @@ export default async function AdminPage({
                       <p className="text-xs text-slate-500 dark:text-slate-400">{b.category} · {b.address}</p>
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Dueño: {(b as Business & { profiles?: { name: string } }).profiles?.name ?? "—"}</p>
                     </div>
-                    {!isDemo && <AdminApproveButton businessId={b.id} />}
+                    {!isDemo && <AdminApproveButton businessId={b.id} ownerId={b.owner_id} />}
                   </div>
                 ))}
                 {pending.length > 3 && (
@@ -220,7 +220,7 @@ export default async function AdminPage({
                         </p>
                       </div>
                     </div>
-                    {!isDemo && <AdminBusinessActions businessId={b.id} isApproved={false} isActive={false} />}
+                    {!isDemo && <AdminBusinessActions businessId={b.id} ownerId={b.owner_id} isApproved={false} isActive={false} />}
                     {isDemo && <span className="text-xs text-slate-400 italic">Demo</span>}
                   </div>
                 ))}
@@ -276,7 +276,7 @@ export default async function AdminPage({
                       <div className="mt-3 flex items-center gap-2 flex-wrap">
                         {!isDemo ? (
                           <>
-                            <AdminBusinessActions businessId={b.id} isApproved={true} isActive={b.is_active} />
+                            <AdminBusinessActions businessId={b.id} ownerId={b.owner_id} isApproved={true} isActive={b.is_active} />
                             <AssignCouponsButton businessId={b.id} businessName={b.name} />
                           </>
                         ) : (

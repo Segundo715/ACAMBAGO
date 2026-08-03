@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { revertRoleIfNoBusinesses } from "@/lib/revert-owner-role";
 import { CheckCircle, XCircle, PauseCircle, PlayCircle, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 interface Props {
   businessId: string;
+  ownerId: string;
   isApproved: boolean;
   isActive: boolean;
 }
 
-export default function AdminBusinessActions({ businessId, isApproved, isActive }: Props) {
+export default function AdminBusinessActions({ businessId, ownerId, isApproved, isActive }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -31,6 +33,7 @@ export default function AdminBusinessActions({ businessId, isApproved, isActive 
   const reject = () => run(async () => {
     if (!confirm("¿Rechazar y eliminar este negocio permanentemente?")) return;
     await supabase.from("businesses").delete().eq("id", businessId);
+    await revertRoleIfNoBusinesses(supabase, ownerId);
     toast.success("Negocio eliminado");
     router.refresh();
   });
@@ -43,6 +46,7 @@ export default function AdminBusinessActions({ businessId, isApproved, isActive 
   const deleteForever = () => run(async () => {
     if (!confirm("¿Eliminar este negocio permanentemente? Esta acción no se puede deshacer.")) return;
     await supabase.from("businesses").delete().eq("id", businessId);
+    await revertRoleIfNoBusinesses(supabase, ownerId);
     toast.success("Negocio eliminado");
     router.refresh();
   });

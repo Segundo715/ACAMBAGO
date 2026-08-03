@@ -2,11 +2,13 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import {
-  Search, LayoutGrid, Package, Ticket, Store, ArrowRight, MapPin,
+  LayoutGrid, Package, Ticket, Store, ArrowRight, MapPin, Compass,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
+import QuickAccessRow from "./QuickAccessRow";
 import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "./ProductsReel";
 import { Business } from "@/types";
@@ -75,20 +77,36 @@ export default function MobileReelsHome({
       style={{ height: "calc(100dvh - 4rem - 5.25rem)" }}
     >
       {/* Bienvenida */}
-      <ReelSection className="text-center items-center bg-gradient-to-br from-brand-700 via-brand-800 to-[#050e18] text-white">
-        <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 rounded-full text-xs font-medium mb-5">
-          <MapPin className="w-3.5 h-3.5 text-brand-300" /> Acámbaro, Guanajuato
-        </span>
-        <h1 className="text-3xl font-bold leading-tight mb-3">
-          Compra local,<br /><span className="text-brand-300">apoya tu ciudad</span>
-        </h1>
-        <p className="text-gray-300 text-sm mb-2 max-w-xs">
-          El marketplace de productos locales de Acámbaro.
-        </p>
-        <div className="w-full mt-4">
-          <SearchBar />
+      <ReelSection className="relative overflow-hidden text-center items-center text-white">
+        <Image src="/hero-iglesia.jpg" alt="Acámbaro" fill priority className="object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/95 via-[#060e18]/90 to-brand-800/85" />
+        <div className="relative z-10 flex flex-col items-center">
+          <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 rounded-full text-xs font-medium mb-5">
+            <MapPin className="w-3.5 h-3.5 text-brand-300" /> Acámbaro, Guanajuato
+          </span>
+          <h1 className="text-3xl font-bold leading-tight mb-3">
+            Compra local,<br /><span className="text-brand-300">apoya tu ciudad</span>
+          </h1>
+          <p className="text-gray-300 text-sm mb-2 max-w-xs">
+            El marketplace de productos locales de Acámbaro.
+          </p>
+          <div className="w-full mt-4">
+            <SearchBar />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">{totalCount} tiendas activas · desliza hacia arriba ↑</p>
         </div>
-        <p className="text-xs text-gray-400 mt-1">{totalCount} tiendas activas · desliza hacia arriba ↑</p>
+      </ReelSection>
+
+      {/* Accesos rápidos */}
+      <ReelSection className="bg-white dark:bg-[#050e18] px-0">
+        <div className="flex items-center gap-2 mb-1 px-5">
+          <Compass className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Explora Acom-Di</h2>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5 px-5">Todo lo que puedes hacer en la app</p>
+        <div className="px-5">
+          <QuickAccessRow />
+        </div>
       </ReelSection>
 
       {/* Categorías */}

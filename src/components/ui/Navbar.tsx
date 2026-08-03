@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, X, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
@@ -16,6 +16,7 @@ import { useClerk } from "@clerk/nextjs";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -51,6 +52,22 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [menuOpen]);
 
+  // El header cambia ligeramente de color/sombra al hacer scroll. La home
+  // en celular ya no scrollea la ventana (MobileReelsHome tiene su propio
+  // contenedor con scroll interno), asi que ademas del scroll normal se
+  // escucha un evento propio que ese componente dispara con su scrollTop.
+  const onScroll = useCallback((y: number) => setScrolled(y > 8), []);
+  useEffect(() => {
+    const onWindowScroll = () => onScroll(window.scrollY);
+    const onAppScroll = (e: Event) => onScroll((e as CustomEvent<number>).detail);
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    window.addEventListener("app-scroll", onAppScroll as EventListener);
+    return () => {
+      window.removeEventListener("scroll", onWindowScroll);
+      window.removeEventListener("app-scroll", onAppScroll as EventListener);
+    };
+  }, [onScroll]);
+
   const switchStore = (id: string) => {
     setMenuOpen(false);
     if (id === activeBusinessId) {
@@ -65,7 +82,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navRef} className="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm dark:bg-[#050e18]/75 dark:border-white/10 dark:shadow-none">
+    <nav
+      ref={navRef}
+      className={`md:hidden sticky top-0 z-50 backdrop-blur-md border-b transition-all duration-300 ${
+        scrolled
+          ? "bg-white/95 border-slate-200 shadow-md dark:bg-[#050e18]/90 dark:border-white/15"
+          : "bg-white/90 border-slate-200 shadow-sm dark:bg-[#050e18]/75 dark:border-white/10 dark:shadow-none"
+      }`}
+    >
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 

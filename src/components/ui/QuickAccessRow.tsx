@@ -14,13 +14,13 @@ const ITEMS = [
   { key: "cupones", icon: Ticket, title: "Cupones con QR", desc: "Descuentos exclusivos en tiendas locales", cta: "Ver cupones", href: "/coupons" },
   { key: "mapa", icon: MapPin, title: "Mapa interactivo", desc: "Encuentra negocios cerca de ti", cta: "Ver mapa", href: "/map" },
   { key: "categorias", icon: LayoutGrid, title: "Categorías", desc: "Explora por tipo de negocio", cta: "Ver categorías", href: "/categorias" },
-  { key: "destacados", icon: Package, title: "Productos Destacados", desc: "Selección variada de las tiendas locales", cta: "Ver productos", href: "#productos" },
+  { key: "destacados", icon: Package, title: "Productos Destacados", desc: "Selección variada de las tiendas locales", cta: "Ver productos", href: "/productos" },
   { key: "publicar", icon: Store, title: "Publica tu tienda", desc: "Vende tus productos gratis en Acámbaro", cta: "Publicar tienda", href: "/perfil/crear-tienda" },
   { key: "recientes", icon: Clock, title: "Vistos recientemente", desc: "Los productos que viste en este navegador", cta: "Ver historial", href: "/vistos-recientemente" },
   { key: "baratos", icon: Coins, title: "Menos de $500", desc: "Productos con precios bajos", cta: "Mostrar productos", href: "/menos-de-500" },
   { key: "vendidos", icon: TrendingUp, title: "Más vendidos", desc: "Ranking real por ventas de las tiendas", cta: "Ir a más vendidos", href: "/mas-vendidos" },
-  { key: "entrega", icon: Truck, title: "Entrega a domicilio", desc: "Muchos negocios entregan directo en Acámbaro", cta: "Ver tiendas", href: "#tiendas" },
-  { key: "pago", icon: Lock, title: "Pago seguro", desc: "Paga con Mercado Pago o tarjeta, protegido", cta: "Cómo funciona", href: "#tiendas" },
+  { key: "entrega", icon: Truck, title: "Entrega a domicilio", desc: "Muchos negocios entregan directo en Acámbaro", cta: "Ver tiendas", href: "/?delivery=domicilio" },
+  { key: "pago", icon: Lock, title: "Pago seguro", desc: "Paga con Mercado Pago o tarjeta, protegido", cta: "Cómo funciona", href: "/pago-seguro" },
 ];
 
 export default function QuickAccessRow() {

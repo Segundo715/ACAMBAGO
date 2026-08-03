@@ -19,7 +19,7 @@ import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
 
-async function getBusinesses(category?: string, search?: string): Promise<Business[]> {
+async function getBusinesses(category?: string, search?: string, homeDelivery?: boolean): Promise<Business[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   if (!url || url.includes("your-project") || url === "https://placeholder.supabase.co") return [];
   try {
@@ -30,6 +30,7 @@ async function getBusinesses(category?: string, search?: string): Promise<Busine
       .eq("is_approved", true).eq("is_active", true)
       .order("rating_avg", { ascending: false });
     if (category) query = query.eq("category", category);
+    if (homeDelivery) query = query.eq("home_enabled", true);
     if (search) {
       // Comas y paréntesis rompen la sintaxis de .or() de PostgREST, se limpian antes de armar el filtro.
       const term = search.replace(/[,()]/g, " ").trim();
@@ -115,10 +116,11 @@ const FEATURED_CATEGORIES = [
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string }>;
+  searchParams: Promise<{ category?: string; q?: string; delivery?: string }>;
 }) {
   const params = await searchParams;
-  const supabaseBusinesses = await getBusinesses(params.category, params.q);
+  const wantsHomeDelivery = params.delivery === "domicilio";
+  const supabaseBusinesses = await getBusinesses(params.category, params.q, wantsHomeDelivery);
   const realFeatured = await getFeaturedProducts();
   const featured = realFeatured.length > 0 ? realFeatured : DEMO_FEATURED;
   const query = params.q?.toLowerCase() ?? "";
@@ -127,7 +129,10 @@ export default async function HomePage({
   const filteredDemos = ALL_DEMO_BUSINESSES.filter((b) => {
     const matchesCat = !cat || b.category === cat;
     const matchesQuery = !query || b.name.toLowerCase().includes(query) || b.description?.toLowerCase().includes(query) || b.category.toLowerCase().includes(query);
-    return matchesCat && matchesQuery;
+    // Los negocios demo no traen home_enabled propio; igual que en la base
+    // real (default true), se cuentan como disponibles salvo que digan false.
+    const matchesDelivery = !wantsHomeDelivery || b.home_enabled !== false;
+    return matchesCat && matchesQuery && matchesDelivery;
   });
 
   const businesses: Business[] = [
@@ -136,7 +141,7 @@ export default async function HomePage({
   ];
 
   const totalCount = businesses.length;
-  const isFiltered = !!(params.category || params.q);
+  const isFiltered = !!(params.category || params.q || wantsHomeDelivery);
   // Al filtrar solo por categoría (sin búsqueda de texto) no hace falta el
   // hero ni los accesos rápidos: así el resultado aparece arriba de inmediato
   // en vez de que el usuario tenga que bajar para verlo. Si hay búsqueda de
@@ -180,7 +185,7 @@ export default async function HomePage({
         <div className="max-w-7xl mx-auto px-4 pb-16 pt-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {cat || `Resultados para "${params.q}"`}
+              {cat || (wantsHomeDelivery && !query ? "Entrega a domicilio" : "") || `Resultados para "${params.q}"`}
               <span className="ml-2 text-sm font-normal text-slate-400 dark:text-gray-500">({totalCount})</span>
             </h2>
             <Link href="/" className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">Limpiar filtros</Link>

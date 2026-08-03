@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 import QuickAccessRow from "./QuickAccessRow";
+import CategoriesReel from "./CategoriesReel";
 import BusinessCard from "@/components/business/BusinessCard";
 import ProductsReel from "./ProductsReel";
 import { Business } from "@/types";
@@ -110,23 +111,14 @@ export default function MobileReelsHome({
       </ReelSection>
 
       {/* Categorías */}
-      <ReelSection className="bg-white dark:bg-[#050e18]">
-        <div className="flex items-center gap-2 mb-1">
+      <ReelSection className="bg-white dark:bg-[#050e18] px-0">
+        <div className="flex items-center gap-2 mb-1 px-5">
           <LayoutGrid className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Categorías</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Explorar por Categoría</h2>
         </div>
-        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">Explora por tipo de negocio</p>
-        <div className="grid grid-cols-3 gap-3">
-          {categories.slice(0, 6).map((c) => (
-            <Link
-              key={c.name}
-              href={`/?category=${encodeURIComponent(c.name)}`}
-              className="card p-3 flex flex-col items-center text-center gap-1.5 hover:shadow-md transition-all"
-            >
-              <span className="text-2xl">{c.emoji}</span>
-              <span className="text-[11px] font-medium text-slate-700 dark:text-gray-200 leading-tight line-clamp-2">{c.name}</span>
-            </Link>
-          ))}
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5 px-5">Encuentra exactamente lo que buscas</p>
+        <div className="px-5">
+          <CategoriesReel items={categories} />
         </div>
         <Link href="/categorias" className="btn-primary text-sm mt-5 mx-auto flex items-center gap-2 w-fit">
           Ver todas las categorías <ArrowRight className="w-4 h-4" />

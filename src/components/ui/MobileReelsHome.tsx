@@ -110,6 +110,19 @@ export default function MobileReelsHome({
         </div>
       </ReelSection>
 
+      {/* Productos Destacados */}
+      <ReelSection className="bg-slate-50 dark:bg-black/20">
+        <div className="flex items-center gap-2 mb-1">
+          <Package className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Productos Destacados</h2>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">Selección variada de las tiendas locales</p>
+        <ProductsReel grid items={featured.slice(0, 4)} />
+        <Link href="/productos" className="btn-primary text-sm mt-5 mx-auto flex items-center gap-2 w-fit">
+          Ver más productos <ArrowRight className="w-4 h-4" />
+        </Link>
+      </ReelSection>
+
       {/* Categorías */}
       <ReelSection className="bg-white dark:bg-[#050e18] px-0">
         <div className="flex items-center gap-2 mb-1 px-5">
@@ -125,16 +138,18 @@ export default function MobileReelsHome({
         </Link>
       </ReelSection>
 
-      {/* Productos Destacados */}
-      <ReelSection className="bg-slate-50 dark:bg-black/20">
+      {/* Tiendas */}
+      <ReelSection className="bg-white dark:bg-[#050e18]">
         <div className="flex items-center gap-2 mb-1">
-          <Package className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Productos Destacados</h2>
+          <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Tiendas locales</h2>
         </div>
-        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">Selección variada de las tiendas locales</p>
-        <ProductsReel grid items={featured.slice(0, 4)} />
-        <Link href="/productos" className="btn-primary text-sm mt-5 mx-auto flex items-center gap-2 w-fit">
-          Ver más productos <ArrowRight className="w-4 h-4" />
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">{totalCount} negocios reales de Acámbaro</p>
+        <div className="grid grid-cols-1 gap-4">
+          {businesses.slice(0, 2).map((b) => <BusinessCard key={b.id} business={b} />)}
+        </div>
+        <Link href="/map" className="btn-primary text-sm mt-5 mx-auto flex items-center gap-2 w-fit">
+          Ver todas en el mapa <ArrowRight className="w-4 h-4" />
         </Link>
       </ReelSection>
 
@@ -149,21 +164,6 @@ export default function MobileReelsHome({
         </p>
         <Link href="/coupons" className="bg-white text-orange-700 font-semibold px-6 py-3 rounded-xl text-sm flex items-center gap-2 shadow-lg">
           Ver cupones disponibles <ArrowRight className="w-4 h-4" />
-        </Link>
-      </ReelSection>
-
-      {/* Tiendas */}
-      <ReelSection className="bg-white dark:bg-[#050e18]">
-        <div className="flex items-center gap-2 mb-1">
-          <Store className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Tiendas locales</h2>
-        </div>
-        <p className="text-sm text-slate-500 dark:text-gray-400 mb-5">{totalCount} negocios reales de Acámbaro</p>
-        <div className="grid grid-cols-1 gap-4">
-          {businesses.slice(0, 2).map((b) => <BusinessCard key={b.id} business={b} />)}
-        </div>
-        <Link href="/map" className="btn-primary text-sm mt-5 mx-auto flex items-center gap-2 w-fit">
-          Ver todas en el mapa <ArrowRight className="w-4 h-4" />
         </Link>
       </ReelSection>
     </div>

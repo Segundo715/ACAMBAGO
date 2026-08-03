@@ -4,7 +4,6 @@ import HeroCarousel from "@/components/ui/HeroCarousel";
 import QuickAccessRow from "@/components/ui/QuickAccessRow";
 import DragScroll from "@/components/ui/DragScroll";
 import CategoriesReel from "@/components/ui/CategoriesReel";
-import MobileReelsHome from "@/components/ui/MobileReelsHome";
 import { Business, BUSINESS_CATEGORIES } from "@/types";
 import {
   DEMO_BUSINESSES, DEMO_BUSINESSES_EXTRA,
@@ -152,11 +151,7 @@ export default async function HomePage({
   return (
     <>
       {!hideHero && (
-        // En celular, sin filtros, el hero clasico lo reemplaza el scroll
-        // vertical tipo Reels (MobileReelsHome) mas abajo; con busqueda de
-        // texto activa (isFiltered && query) se conserva tambien en celular,
-        // porque ahi vive la barra de busqueda para editarla.
-        <div className={!isFiltered ? "hidden md:block" : ""}>
+        <>
           {/* ── Hero: carrusel estilo Mercado Libre ── */}
           <HeroCarousel defaultSearch={params.q} totalCount={totalCount} />
 
@@ -166,17 +161,7 @@ export default async function HomePage({
               <QuickAccessRow />
             </div>
           </section>
-        </div>
-      )}
-
-      {/* ── Scroll vertical tipo Reels, solo celular, solo sin filtros ── */}
-      {!isFiltered && (
-        <MobileReelsHome
-          totalCount={totalCount}
-          featured={featured}
-          categories={FEATURED_CATEGORIES}
-          businesses={businesses}
-        />
+        </>
       )}
 
       {/* Filtros — solo vista filtrada */}
@@ -218,7 +203,7 @@ export default async function HomePage({
           )}
         </div>
       ) : (
-        <div className="hidden md:block">
+        <>
           {/* ── Productos Destacados — Reel ── */}
           <section id="productos" className="py-14 overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 mb-8">
@@ -315,7 +300,7 @@ export default async function HomePage({
               ))}
             </div>
           </section>
-        </div>
+        </>
       )}
     </>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, X, LogIn, UserPlus, LayoutDashboard, LogOut, Store, User, Plus, Check } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
@@ -52,21 +52,12 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [menuOpen]);
 
-  // El header cambia ligeramente de color/sombra al hacer scroll. La home
-  // en celular ya no scrollea la ventana (MobileReelsHome tiene su propio
-  // contenedor con scroll interno), asi que ademas del scroll normal se
-  // escucha un evento propio que ese componente dispara con su scrollTop.
-  const onScroll = useCallback((y: number) => setScrolled(y > 8), []);
+  // El header cambia ligeramente de color/sombra al hacer scroll.
   useEffect(() => {
-    const onWindowScroll = () => onScroll(window.scrollY);
-    const onAppScroll = (e: Event) => onScroll((e as CustomEvent<number>).detail);
+    const onWindowScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onWindowScroll, { passive: true });
-    window.addEventListener("app-scroll", onAppScroll as EventListener);
-    return () => {
-      window.removeEventListener("scroll", onWindowScroll);
-      window.removeEventListener("app-scroll", onAppScroll as EventListener);
-    };
-  }, [onScroll]);
+    return () => window.removeEventListener("scroll", onWindowScroll);
+  }, []);
 
   const switchStore = (id: string) => {
     setMenuOpen(false);

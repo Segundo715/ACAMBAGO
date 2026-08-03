@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getDemoMode, DEMO_BUYER, DEMO_SELLER } from "@/lib/demo-mode";
 
@@ -14,6 +15,7 @@ interface AuthUser {
 
 export function useAuthUser(): AuthUser {
   const { user, isLoaded } = useUser();
+  const pathname = usePathname();
   const [name, setName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -54,7 +56,11 @@ export function useAuthUser(): AuthUser {
       setProfileLoaded(true);
     };
     load();
-  }, [isLoaded, user?.id, demoMode]);
+    // Se vuelve a leer en cada cambio de ruta (no solo cuando cambia el
+    // usuario), para que un rol recien actualizado (ej. crear tienda sube
+    // de "client" a "business") se refleje sin necesitar recargar la pagina.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, user?.id, demoMode, pathname]);
 
   if (demoMode === "buyer") {
     return { userId: DEMO_BUYER.userId, name: DEMO_BUYER.name, role: "client", loading: false };

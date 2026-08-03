@@ -110,7 +110,11 @@ export default function DesktopSidebar({ collapsed }: { collapsed: boolean }) {
             /* Usuario logueado */
             <>
               {/* Info del usuario */}
-              <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 ${collapsed ? "justify-center" : ""}`} title={name ?? "Usuario"}>
+              <Link
+                href="/perfil"
+                title="Ver mi perfil"
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors ${collapsed ? "justify-center" : ""}`}
+              >
                 <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-500/20 flex items-center justify-center flex-shrink-0">
                   {role === "business"
                     ? <Store className="w-4 h-4 text-brand-600 dark:text-brand-400" />
@@ -123,7 +127,7 @@ export default function DesktopSidebar({ collapsed }: { collapsed: boolean }) {
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 capitalize">{role ?? "usuario"}</p>
                   </div>
                 )}
-              </div>
+              </Link>
 
               {/* Selector Mi cuenta / Mi tienda (solo para vendedores) */}
               {role === "business" ? (

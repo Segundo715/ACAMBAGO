@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Store, User, ChevronDown, Plus } from "lucide-react";
@@ -13,6 +14,7 @@ import AccountModeSwitcher from "@/components/ui/AccountModeSwitcher";
 
 export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" | "topbar" }) {
   const { user, isLoaded } = useUser();
+  const pathname = usePathname();
   const [name, setName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState<"buyer" | "seller" | null>(null);
@@ -60,7 +62,11 @@ export default function UserInfo({ variant = "sidebar" }: { variant?: "sidebar" 
       }
     };
     load();
-  }, [isLoaded, user?.id, demoMode]);
+    // Se vuelve a leer en cada cambio de ruta, para que un rol recien
+    // actualizado (ej. crear tienda sube de "client" a "business") se
+    // refleje sin necesitar recargar la pagina.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, user?.id, demoMode, pathname]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
